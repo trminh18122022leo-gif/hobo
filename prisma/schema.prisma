@@ -1,0 +1,312 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ── Authentication ──────────────────────────────────────────
+model User {
+  id                      String         @id @default(uuid())
+  email                   String         @unique
+  passwordHash            String?
+  name                    String?
+  role                    String         @default("user") // user | admin
+  status                  String         @default("active") // active | soft_deleted | suspended
+  softDeletedAt           DateTime?
+  studentVerifiedSourceId Int?
+  emailVerifiedAt         DateTime?
+  lastLoginAt             DateTime?
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+  profile                 Profile?
+  auditLogs               AuditLog[]
+  oauthAccounts           OAuthAccount[]
+  refreshTokens           RefreshToken[]
+  studentVerifiedSource   Source?        @relation("StudentVerifiedSource", fields: [studentVerifiedSourceId], references: [id])
+}
+
+// ── Data Sources ────────────────────────────────────────────
+model Source {
+  id                  Int        @id @default(autoincrement())
+  name                String
+  baseUrl             String     @unique
+  kind                String     // university | fund | embassy | company | portal
+  tier                String     @default("B") // A | B | C
+  fetchStrategy       String     @default("fetch") // fetch | playwright | rss | api
+  adapterKey          String?
+  etag                String?
+  lastModified        String?
+  contentHash         String?
+  trustScore          Float      @default(0.6)
+  robotsOk            Boolean    @default(true)
+  consecutiveFailures Int        @default(0)
+  lastFetchedAt       DateTime?
+  lastChangedAt       DateTime?
+  isActive            Boolean    @default(true)
+  rawDocuments        RawDocument[]
+  opportunities       Opportunity[]
+  crawlLogs           CrawlLog[]
+  verifiedUsers       User[]        @relation("StudentVerifiedSource")
+}
+
+// ── Raw documents (immutable) ───────────────────────────────
+model RawDocument {
+  id          Int           @id @default(autoincrement())
+  sourceId    Int
+  url         String
+  contentHash String
+  rawHtml     String?
+  cleanText   String?
+  fetchedAt   DateTime      @default(now())
+  source      Source         @relation(fields: [sourceId], references: [id])
+  opportunities Opportunity[]
+
+  @@unique([url, contentHash])
+}
+
+// ── Normalized opportunities ────────────────────────────────
+model Opportunity {
+  id               Int       @id @default(autoincrement())
+  rawDocumentId    Int?
+  sourceId         Int
+  slug             String    @unique
+  kind             String    // undergraduate | graduate | scholarship_domestic | scholarship_foreign | scholarship_corporate
+  title            String
+  organization     String
+  organizationType String?   // university | company | government | ngo | foundation
+  summary          String?
+  requirements     String    @default("{}") // JSON: { gpa_min, language, etc }
+  fieldCodes       String    @default("[]") // JSON array of field code strings
+  degreeLevel      String?   // JSON array: ["bachelor","master","phd"]
+  studyLocation    String?
+  fundingType      String?   // full | partial | tuition | stipend | one_time
+  fundingValueVnd  Int?
+  bondYears        Int?
+  applyStart       DateTime?
+  deadline         DateTime?
+  canonicalUrl     String
+  rankScore        Float     @default(0)
+  confidence       Float?
+  status           String    @default("published") // published | review | archived | expired
+  firstSeenAt      DateTime  @default(now())
+  lastVerifiedAt   DateTime  @default(now())
+
+  // Bổ sung v2.1: Trang chi tiết toàn diện
+  requiredDocuments  String   @default("[]") // JSON: [{ name, format_hint, evidence_quote }]
+  applicationSteps   String   @default("[]") // JSON: [{ order, title, description, evidence_quote }]
+  timelineMilestones String   @default("[]") // JSON: [{ label, date, is_estimated, evidence_quote }]
+  benefits           String   @default("[]") // JSON: [{ label, value, evidence_quote }]
+  faq                String   @default("[]") // JSON: [{ question, answer, evidence_quote }]
+  contact            String?  // JSON: { email, phone, office_hours }
+  selectionRounds    Int      @default(0)
+
+  source          Source              @relation(fields: [sourceId], references: [id])
+  rawDocument     RawDocument?        @relation(fields: [rawDocumentId], references: [id])
+  versions        OpportunityVersion[]
+  recommendations Recommendation[]
+  applications    ApplicationTracker[]
+
+  @@index([deadline])
+  @@index([kind])
+  @@index([status])
+  @@index([organization])
+  @@index([rankScore])
+}
+
+// ── Change history ──────────────────────────────────────────
+model OpportunityVersion {
+  id            Int         @id @default(autoincrement())
+  opportunityId Int
+  diff          String      // JSON diff of changed fields
+  changedAt     DateTime    @default(now())
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([opportunityId])
+}
+
+// ── User profiles (sensitive data encrypted) ────────────────
+model Profile {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  gpa              Float?
+  gpaScale         Float    @default(4.0)
+  cpa              Float?
+  degreeLevel      String?
+  fieldCodes       String   @default("[]") // JSON
+  languageCerts    String   @default("{}") // JSON
+  achievements     String   @default("[]") // JSON
+  projects         String   @default("[]") // JSON
+  publications     String   @default("[]") // JSON
+  preferredOrgType String   @default("[]") // JSON
+  preferredRegions String   @default("[]") // JSON
+  consentVersion   String   @default("1.0")
+  consentAt        DateTime @default(now())
+  dataResidencyPreference String @default("vietnam") // vietnam | global
+  encryptedData    String?  // AES-256-GCM for extra-sensitive fields
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recommendations Recommendation[]
+  applications    ApplicationTracker[]
+}
+
+// ── Cached recommendations ──────────────────────────────────
+model Recommendation {
+  profileId     String
+  opportunityId Int
+  hardPass      Boolean
+  softScore     Float?
+  gapAnalysis   String? // JSON: { fitSummary, met, missing, actionItems }
+  actionItems   String? // JSON array
+  modelUsed     String?
+  promptVersion String?
+  generatedAt   DateTime @default(now())
+
+  profile     Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, opportunityId])
+}
+
+// ── Security audit log ──────────────────────────────────────
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  userId     String?
+  action     String   // login | read_profile | update_profile | delete_account | admin_action
+  resource   String   // profile | opportunity | recommendation | user
+  resourceId String?
+  details    String?  // JSON
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([action])
+}
+
+// ── Crawl monitoring ────────────────────────────────────────
+model CrawlLog {
+  id             Int      @id @default(autoincrement())
+  sourceId       Int
+  status         String   // success | error | unchanged | skipped
+  duration       Int?     // milliseconds
+  error          String?
+  recordsNew     Int      @default(0)
+  recordsUpdated Int      @default(0)
+  crawledAt      DateTime @default(now())
+
+  source Source @relation(fields: [sourceId], references: [id])
+
+  @@index([sourceId])
+  @@index([crawledAt])
+}
+
+// ── B.3 Dữ liệu lịch sử điểm chuẩn và cạnh tranh ────────────
+model HistoricalBenchmark {
+  id              Int      @id @default(autoincrement())
+  opportunityRef  String   // mã chương trình hoặc slug
+  year            Int
+  benchmarkScore  Float?
+  applicantCount  Int?
+  quota           Int?
+  sourceUrl       String?
+
+  @@unique([opportunityRef, year])
+  @@index([opportunityRef])
+}
+
+// ── B.6 Theo dõi hồ sơ ứng tuyển cá nhân (Kanban) ────────────
+model ApplicationTracker {
+  id             Int         @id @default(autoincrement())
+  profileId      String
+  opportunityId  Int
+  status         String      @default("interested") // interested | preparing | submitted | result
+  checklist      String      @default("[]") // JSON: [{ id, task, weekNumber, isCompleted, deadline }]
+  updatedAt      DateTime    @default(now())
+
+  profile        Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  opportunity    Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, opportunityId])
+  @@index([profileId])
+  @@index([status])
+}
+
+// ── B.2 Mẫu lộ trình chuẩn bị theo loại hồ sơ ────────────────
+model DocumentPrepTemplate {
+  documentType   String   @id // "ielts" | "recommendation_letter" | "essay" | "portfolio" | "transcript" | "cv"
+  leadWeeks      Int      // số tuần cần chuẩn bị trước hạn nộp
+  defaultPrompt  String   // hướng dẫn gợi ý hành động
+}
+
+// ── v2.2 OAuth Accounts ──────────────────────────────────────
+model OAuthAccount {
+  id                String   @id @default(uuid())
+  userId            String
+  provider          String   // google | github | microsoft
+  providerAccountId String
+  createdAt         DateTime @default(now())
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// ── v2.2 Refresh Tokens & Multi-device Sessions ──────────────
+model RefreshToken {
+  id          String   @id @default(uuid())
+  userId      String
+  tokenHash   String   @unique
+  deviceLabel String?  // e.g. "Chrome trên Windows", "Safari trên iPhone"
+  ipPrefix    String?  // /24 prefix e.g. "118.70.12.*"
+  isRevoked   Boolean  @default(false)
+  replacedBy  String?  // Pointer to new token id for reuse detection
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  lastUsedAt  DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+// ── v2.2 Email Verification Tokens ───────────────────────────
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  email     String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+// ── v2.2 Password Reset Tokens ───────────────────────────────
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  email     String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+// ── v2.2 Magic Link Tokens ───────────────────────────────────
+model MagicLinkToken {
+  id        String   @id @default(uuid())
+  email     String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+

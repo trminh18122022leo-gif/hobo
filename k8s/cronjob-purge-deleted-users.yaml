@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: purge-deleted-users-cronjob
+  namespace: hocbong-vn
+spec:
+  # Run everyday at 03:00 UTC (10:00 AM VN time)
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: purge-deleted-users
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: purge-runner
+              image: ghcr.io/hocbong-vn/platform:latest
+              command: ["npx", "tsx", "scripts/purge-deleted-users.ts"]
+              envFrom:
+                - configMapRef:
+                    name: hocbong-config
+                - secretRef:
+                    name: hocbong-secrets
+              resources:
+                requests:
+                  cpu: "100m"
+                  memory: "256Mi"
+                limits:
+                  cpu: "500m"
+                  memory: "512Mi"

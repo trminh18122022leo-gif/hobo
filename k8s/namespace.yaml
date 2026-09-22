@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hocbong-vn
+  labels:
+    app.kubernetes.io/name: hocbong-vn
+    app.kubernetes.io/part-of: hocbong-platform
