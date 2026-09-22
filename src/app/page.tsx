@@ -7,36 +7,49 @@ import { CalendarBlank, MapPin, Bank, ArrowRight, GraduationCap } from '@phospho
 export const revalidate = 60; // Revalidate every minute
 
 async function getHomePageData() {
-  const [totalOpportunities, totalSources, urgentOpportunities, featuredScholarships] = await Promise.all([
-    prisma.opportunity.count({ where: { status: 'published' } }),
-    prisma.source.count({ where: { isActive: true } }),
-    prisma.opportunity.findMany({
-      where: {
-        status: 'published',
-        deadline: { gt: new Date() },
-      },
-      orderBy: { deadline: 'asc' },
-      take: 6,
-    }),
-    prisma.opportunity.findMany({
-      where: {
-        status: 'published',
-        kind: { in: ['scholarship_domestic', 'scholarship_foreign', 'scholarship_corporate'] },
-      },
-      orderBy: { rankScore: 'desc' },
-      take: 6,
-    }),
-  ]);
+  try {
+    const [totalOpportunities, totalSources, urgentOpportunities, featuredScholarships] = await Promise.all([
+      prisma.opportunity.count({ where: { status: 'published' } }),
+      prisma.source.count({ where: { isActive: true } }),
+      prisma.opportunity.findMany({
+        where: {
+          status: 'published',
+          deadline: { gt: new Date() },
+        },
+        orderBy: { deadline: 'asc' },
+        take: 6,
+      }),
+      prisma.opportunity.findMany({
+        where: {
+          status: 'published',
+          kind: { in: ['scholarship_domestic', 'scholarship_foreign', 'scholarship_corporate'] },
+        },
+        orderBy: { rankScore: 'desc' },
+        take: 6,
+      }),
+    ]);
 
-  return {
-    stats: {
-      totalScholarships: totalOpportunities,
-      universities: totalSources,
-      countries: 15,
-    },
-    urgentOpportunities,
-    featuredScholarships,
-  };
+    return {
+      stats: {
+        totalScholarships: totalOpportunities,
+        universities: totalSources,
+        countries: 15,
+      },
+      urgentOpportunities: urgentOpportunities || [],
+      featuredScholarships: featuredScholarships || [],
+    };
+  } catch (error) {
+    console.warn('Database query during build/render fallback:', error);
+    return {
+      stats: {
+        totalScholarships: 0,
+        universities: 0,
+        countries: 15,
+      },
+      urgentOpportunities: [],
+      featuredScholarships: [],
+    };
+  }
 }
 
 export default async function Home() {

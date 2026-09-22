@@ -21,8 +21,11 @@ COPY . .
 # Generate Prisma Client & Next.js standalone build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV DATABASE_URL="file:/app/prisma/build.db"
+ENV JWT_SECRET="build-time-secret-key-min-32-chars-ok"
 
 RUN npx prisma generate
+RUN npx prisma db push --skip-generate
 RUN npm run build
 
 # ── Stage 3: Runner (Production minimal runtime) ────────────

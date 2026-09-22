@@ -17,6 +17,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Lowercase repository name for Docker image
+        id: repo_name
+        run: echo "REPO_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -31,7 +35,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ghcr.io/${{ steps.repo_name.outputs.REPO_LOWER }}
           tags: |
             type=sha,format=short
             type=raw,value=latest
@@ -47,12 +51,13 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Set up Kubectl
+        if: ${{ secrets.KUBE_CONFIG != '' }}
         uses: azure/setup-kubectl@v3
         with:
           version: 'latest'
 
       - name: Apply Kubernetes manifests & Rollout
-        if: env.KUBE_CONFIG != ''
+        if: ${{ secrets.KUBE_CONFIG != '' }}
         env:
           KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
         run: |
