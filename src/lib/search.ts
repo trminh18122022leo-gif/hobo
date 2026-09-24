@@ -157,6 +157,7 @@ export async function searchOpportunities(query: SearchQueryInput) {
       const matchesKind = kinds.some((k) => {
         if (k === 'scholarship') return docKind.includes('scholarship');
         if (k === 'admission') return docKind.includes('undergraduate') || docKind.includes('graduate');
+        if (k === 'internship') return docKind.includes('internship');
         return docKind === k;
       });
       if (!matchesKind) return false;

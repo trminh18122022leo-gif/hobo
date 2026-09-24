@@ -14,6 +14,7 @@ import {
   Kanban,
   Sparkle,
   ShieldCheck,
+  Globe,
 } from '@phosphor-icons/react';
 import { useCompare } from '@/context/CompareContext';
 
@@ -43,6 +44,7 @@ export default function Header() {
 
   const navLinks = [
     { href: '/tim-kiem', label: 'Khám Phá Học Bổng', icon: MagnifyingGlass },
+    { href: '/nguon-tin', label: '126+ Cổng Dữ Liệu', icon: Globe },
     { href: '/so-sanh', label: 'So Sánh Chi Tiết', icon: Scales, badge: selectedOpps.length },
     { href: '/theo-doi', label: 'Theo Dõi Hồ Sơ', icon: Kanban },
     { href: '/goi-y', label: 'Chiến Lược Gợi Ý', icon: Sparkle },

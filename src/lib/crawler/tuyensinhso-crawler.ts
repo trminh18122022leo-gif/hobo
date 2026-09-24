@@ -50,7 +50,13 @@ export async function crawlTuyensinhso(): Promise<CrawledTuyensinhsoItem[]> {
     // Bóc tách các tin tức và đề án tuyển sinh tiêu biểu trên trang chủ
     $('a').each((_, el) => {
       const href = $(el).attr('href');
-      const text = $(el).text().trim();
+      const rawText = $(el).text() || '';
+      const text = rawText
+        .replace(/<[^>]*>/g, '')
+        .replace(/&#038;/g, '&')
+        .replace(/&#8211;/g, '–')
+        .replace(/\s+/g, ' ')
+        .trim();
 
       if (
         href &&
@@ -76,12 +82,12 @@ export async function crawlTuyensinhso(): Promise<CrawledTuyensinhsoItem[]> {
         else if (text.includes('Y Dược')) org = 'Trường Cao đẳng & Đại học Y Dược';
         else if (text.includes('Bộ GD&ĐT')) org = 'Bộ Giáo dục và Đào tạo';
 
-        const rawSlug = slugify(`tuyensinhso-${text}`, { lower: true, strict: true, locale: 'vi' }).slice(0, 90);
+        const rawSlug = slugify(`tuyensinhso-${text.slice(0, 80)}`, { lower: true, strict: true, locale: 'vi' }).slice(0, 90);
 
         // Tránh trùng lặp trong đợt quét
         if (!results.some((r) => r.slug === rawSlug)) {
-          // Tính thời hạn nộp hồ sơ tương lai (Kỳ tuyển sinh 2026 - 2027)
-          const deadlineDate = new Date('2026-07-30T17:00:00.000Z');
+          // Tính thời hạn nộp hồ sơ tương lai (Kỳ tuyển sinh 2027)
+          const deadlineDate = new Date('2027-07-30T17:00:00.000Z');
 
           results.push({
             slug: rawSlug,

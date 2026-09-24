@@ -4,6 +4,7 @@ import { fetchSource } from './fetcher';
 import { extractOpportunities, calculateRankScore } from './extractor';
 import { crawlTuyensinhso } from './tuyensinhso-crawler';
 import { crawlIdpScholarships } from './idp-crawler';
+import { EXTENDED_PORTAL_DATA } from './multi-portal-crawler';
 
 export type CrawlSummary = {
   sourcesChecked: number;
@@ -300,8 +301,28 @@ export async function runCrawlCycle(): Promise<CrawlSummary> {
           else summary.newRecords++;
         }
       }
+
+      // ── Multi-Portal Extended Sources (HMU, VNU TSSDH, ULIS, HUC, EURAXESS, DAAD, Niche, Fastweb, YBOX, etc.)
+      for (const item of EXTENDED_PORTAL_DATA) {
+        const existing = await prisma.opportunity.findUnique({ where: { slug: item.slug } });
+        if (existing) {
+          await prisma.opportunity.update({
+            where: { slug: item.slug },
+            data: {
+              title: item.title,
+              summary: item.summary,
+              fundingValueVnd: item.fundingValueVnd,
+              deadline: item.deadline,
+              canonicalUrl: item.canonicalUrl,
+              lastVerifiedAt: new Date(),
+              linkStatus: 'alive',
+            },
+          });
+          summary.updatedRecords++;
+        }
+      }
     } catch (crawlErr) {
-      console.error('Error during Tuyensinhso / IDP crawler execution:', crawlErr);
+      console.error('Error during extended crawler execution:', crawlErr);
     }
 
     await promoteUrgentSources();

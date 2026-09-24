@@ -13,7 +13,8 @@ export type OpportunityKind =
   | 'graduate'
   | 'scholarship_domestic'
   | 'scholarship_foreign'
-  | 'scholarship_corporate';
+  | 'scholarship_corporate'
+  | 'internship';
 
 export type FundingType = 'full' | 'partial' | 'tuition' | 'stipend' | 'one_time';
 export type OpportunityStatus = 'published' | 'review' | 'archived' | 'expired';
@@ -27,6 +28,7 @@ export const KIND_LABELS: Record<OpportunityKind, string> = {
   scholarship_domestic: 'Học bổng trong nước',
   scholarship_foreign: 'Học bổng nước ngoài',
   scholarship_corporate: 'Học bổng doanh nghiệp',
+  internship: 'Thực tập sinh & Việc làm',
 };
 
 export const FUNDING_LABELS: Record<FundingType, string> = {
@@ -89,6 +91,8 @@ export interface OpportunityCard {
   daysUntilDeadline: number | null;
   canonicalUrl: string;
   status: string;
+  applicationFee?: string | null;
+  deadlinePattern?: string | null;
 }
 
 export interface SearchFacets {
