@@ -126,7 +126,7 @@ export default function DeviceSettingsPage() {
             <ShieldCheck size={22} weight="fill" />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold font-serif text-slate-100">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100">
               Quản Lý Thiết Bị & Bảo Mật
             </h1>
             <p className="text-xs text-slate-300 font-light mt-0.5">
@@ -153,7 +153,7 @@ export default function DeviceSettingsPage() {
       <div className="liquid-glass rounded-3xl p-6 sm:p-8 border border-white/10 shadow-xl space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-white/10">
           <div>
-            <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2 font-serif">
+            <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
               <Devices size={20} className="text-amber-400" />
               <span>Thiết Bị Đang Hoạt Động ({sessions.length})</span>
             </h2>
@@ -234,7 +234,7 @@ export default function DeviceSettingsPage() {
       <div className="liquid-glass rounded-3xl p-6 sm:p-8 border border-rose-500/20 shadow-xl space-y-4">
         <div className="flex items-center gap-2 text-rose-400">
           <WarningOctagon size={20} weight="fill" />
-          <h2 className="text-base font-bold font-serif">Khu Vực Nguy Hiểm (Danger Zone)</h2>
+          <h2 className="text-base font-bold">Khu Vực Nguy Hiểm (Danger Zone)</h2>
         </div>
         <p className="text-xs text-slate-400 font-light leading-relaxed">
           Xóa tài khoản của bạn khỏi hệ thống. Tài khoản sẽ được chuyển vào chế độ <strong className="text-amber-300">ân hạn 30 ngày (Soft Delete)</strong>. Trong vòng 30 ngày, bạn có thể kích hoạt lại bất kỳ lúc nào bằng cách đăng nhập lại. Sau 30 ngày, hệ thống sẽ xóa vĩnh viễn toàn bộ dữ liệu.
@@ -252,7 +252,7 @@ export default function DeviceSettingsPage() {
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="liquid-glass rounded-3xl p-6 sm:p-8 max-w-md w-full border border-rose-500/30 space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-rose-300 flex items-center gap-2 font-serif">
+            <h3 className="text-lg font-bold text-rose-300 flex items-center gap-2">
               <WarningOctagon size={22} weight="fill" />
               <span>Xác Nhận Xóa Tài Khoản</span>
             </h3>

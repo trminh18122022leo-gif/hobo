@@ -60,10 +60,10 @@ export default function Header() {
               className="flex items-center gap-2 group focus-ring rounded-xl py-1 px-2"
             >
               <div className="w-9 h-9 rounded-xl liquid-glass-gold flex items-center justify-center border border-amber-400/40 shadow-[0_0_15px_rgba(212,175,55,0.3)] group-hover:scale-105 transition-transform">
-                <span className="text-amber-300 font-serif font-black text-lg">H</span>
+                <span className="text-amber-300 font-black text-lg">H</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-base font-extrabold tracking-wider uppercase text-gold-gradient font-serif leading-none">
+                <span className="text-base font-extrabold tracking-wider uppercase text-gold-gradient leading-none">
                   Học Bổng VN
                 </span>
                 <span className="text-[9px] uppercase tracking-[0.2em] text-slate-400 font-mono mt-0.5">

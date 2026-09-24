@@ -126,7 +126,7 @@ function LoginForm() {
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl liquid-glass-gold mb-4 border border-amber-400/40 shadow-[0_0_30px_rgba(212,175,55,0.3)]">
           <Crown size={26} weight="fill" className="text-amber-300" />
         </div>
-        <h1 className="text-3xl font-extrabold font-serif text-slate-100 tracking-tight">
+        <h1 className="text-3xl font-extrabold text-slate-100 tracking-tight">
           Đăng Nhập Hệ Thống
         </h1>
         <p className="text-xs text-slate-400 mt-2 font-light">

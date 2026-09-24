@@ -2,7 +2,7 @@ import Link from 'next/link';
 import HomeHero from '@/components/HomeHero';
 import prisma from '@/lib/db';
 import { KIND_LABELS, FUNDING_LABELS } from '@/types';
-import { CalendarBlank, MapPin, Bank, ArrowRight, GraduationCap, Sparkle, Clock, ShieldCheck } from '@phosphor-icons/react/dist/ssr';
+import { CalendarBlank, MapPin, Bank, ArrowRight, GraduationCap, Sparkle, Clock, ShieldCheck, ArrowSquareOut } from '@phosphor-icons/react/dist/ssr';
 
 export const revalidate = 60; // Revalidate every minute
 
@@ -68,7 +68,7 @@ export default async function Home() {
               <Clock size={14} weight="fill" className="animate-spin" />
               <span>Thời Hạn Gấp</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold font-serif text-slate-100 flex items-center gap-2">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-100 flex items-center gap-2">
               Sắp Hết Hạn Nộp Đơn
             </h2>
             <p className="text-sm text-slate-400 mt-1">Đừng bỏ lỡ các kỳ tuyển sinh và học bổng chuẩn bị đóng cổng nộp hồ sơ</p>
@@ -96,30 +96,33 @@ export default async function Home() {
                 : null;
 
               return (
-                <Link
+                <div
                   key={opp.id}
-                  href={link}
-                  className="block liquid-glass rounded-3xl p-6 border border-white/10 hover:border-amber-400/40 hover:shadow-[0_12px_40px_rgba(0,0,0,0.7),0_0_20px_rgba(212,175,55,0.15)] transition-all group relative overflow-hidden"
+                  className="liquid-glass rounded-3xl p-6 border border-white/10 hover:border-amber-400/40 hover:shadow-[0_12px_40px_rgba(0,0,0,0.7),0_0_20px_rgba(212,175,55,0.15)] transition-all group relative overflow-hidden flex flex-col justify-between"
                 >
-                  <div className="flex items-center justify-between gap-2 mb-4">
-                    <span className="text-[11px] font-extrabold px-3 py-1 rounded-full bg-amber-400/10 text-amber-300 border border-amber-400/30">
-                      {KIND_LABELS[opp.kind as keyof typeof KIND_LABELS] || opp.kind}
-                    </span>
-                    {daysLeft !== null && (
-                      <span className="text-xs font-black text-rose-300 bg-rose-950/80 border border-rose-500/40 px-2.5 py-1 rounded-full shadow-[0_0_12px_rgba(244,63,94,0.3)] flex items-center gap-1">
-                        <Clock size={12} weight="fill" />
-                        {daysLeft <= 0 ? 'Hôm nay!' : `Còn ${daysLeft} ngày`}
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-4">
+                      <span className="text-[11px] font-extrabold px-3 py-1 rounded-full bg-amber-400/10 text-amber-300 border border-amber-400/30">
+                        {KIND_LABELS[opp.kind as keyof typeof KIND_LABELS] || opp.kind}
                       </span>
-                    )}
-                  </div>
+                      {daysLeft !== null && (
+                        <span className="text-xs font-black text-rose-300 bg-rose-950/80 border border-rose-500/40 px-2.5 py-1 rounded-full shadow-[0_0_12px_rgba(244,63,94,0.3)] flex items-center gap-1">
+                          <Clock size={12} weight="fill" />
+                          {daysLeft <= 0 ? 'Hôm nay!' : `Còn ${daysLeft} ngày`}
+                        </span>
+                      )}
+                    </div>
 
-                  <h3 className="font-bold text-lg mb-3 text-slate-100 group-hover:text-amber-300 transition-colors line-clamp-2 leading-snug">
-                    {opp.title}
-                  </h3>
+                    <Link href={link} className="block">
+                      <h3 className="font-bold text-lg mb-3 text-slate-100 group-hover:text-amber-300 transition-colors line-clamp-2 leading-snug">
+                        {opp.title}
+                      </h3>
+                    </Link>
 
-                  <div className="flex items-center text-slate-400 text-xs mb-4">
-                    <Bank size={15} className="mr-1.5 flex-shrink-0 text-amber-400/80" />
-                    <span className="truncate font-medium">{opp.organization}</span>
+                    <div className="flex items-center text-slate-400 text-xs mb-4">
+                      <Bank size={15} className="mr-1.5 flex-shrink-0 text-amber-400/80" />
+                      <span className="truncate font-medium">{opp.organization}</span>
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between pt-4 border-t border-white/10 text-xs">
@@ -128,13 +131,33 @@ export default async function Home() {
                         ? `${new Intl.NumberFormat('vi-VN').format(opp.fundingValueVnd)} đ`
                         : FUNDING_LABELS[opp.fundingType as keyof typeof FUNDING_LABELS] || 'Toàn phần'}
                     </span>
-                    {opp.deadline && (
-                      <span className="text-slate-400 font-mono">
-                        {new Date(opp.deadline).toLocaleDateString('vi-VN')}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {opp.deadline && (
+                        <span className="text-slate-400 font-mono">
+                          {new Date(opp.deadline).toLocaleDateString('vi-VN')}
+                        </span>
+                      )}
+                      <Link
+                        href={link}
+                        className="text-amber-300 hover:text-amber-200 font-semibold p-1"
+                        title="Xem chi tiết"
+                      >
+                        &rarr;
+                      </Link>
+                      {opp.canonicalUrl && (
+                        <a
+                          href={opp.canonicalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1 rounded text-slate-400 hover:text-amber-300 transition-colors"
+                          title="Đến trang tuyển sinh / học bổng gốc"
+                        >
+                          <ArrowSquareOut size={14} weight="bold" />
+                        </a>
+                      )}
+                    </div>
                   </div>
-                </Link>
+                </div>
               );
             })}
           </div>
@@ -149,7 +172,7 @@ export default async function Home() {
               <Sparkle size={14} weight="fill" />
               <span>Haute Selection</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold font-serif text-slate-100 flex items-center gap-2">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-100 flex items-center gap-2">
               Học Bổng Giá Trị Cao Nhất
             </h2>
             <p className="text-sm text-slate-400 mt-1">Xếp hạng theo thuật toán chất lượng tài trợ & mức độ uy tín học thuật</p>
@@ -165,27 +188,30 @@ export default async function Home() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {featuredScholarships.map((opp) => (
-            <Link
+            <div
               key={opp.id}
-              href={`/hoc-bong/${opp.slug}`}
-              className="block liquid-glass-gold rounded-3xl p-6 hover:shadow-[0_15px_50px_rgba(212,175,55,0.2)] transition-all group relative overflow-hidden"
+              className="liquid-glass-gold rounded-3xl p-6 hover:shadow-[0_15px_50px_rgba(212,175,55,0.2)] transition-all group relative overflow-hidden flex flex-col justify-between"
             >
-              <div className="flex items-center justify-between gap-2 mb-4">
-                <span className="text-[11px] font-extrabold px-3 py-1 rounded-full bg-sky-950/80 text-sky-300 border border-sky-400/30">
-                  {KIND_LABELS[opp.kind as keyof typeof KIND_LABELS] || opp.kind}
-                </span>
-                <span className="text-xs font-black text-amber-300 flex items-center gap-1 font-mono">
-                  ★ {opp.rankScore}/100
-                </span>
-              </div>
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-4">
+                  <span className="text-[11px] font-extrabold px-3 py-1 rounded-full bg-sky-950/80 text-sky-300 border border-sky-400/30">
+                    {KIND_LABELS[opp.kind as keyof typeof KIND_LABELS] || opp.kind}
+                  </span>
+                  <span className="text-xs font-black text-amber-300 flex items-center gap-1 font-mono">
+                    ★ {opp.rankScore}/100
+                  </span>
+                </div>
 
-              <h3 className="font-bold text-lg mb-3 text-slate-100 group-hover:text-amber-200 transition-colors line-clamp-2 leading-snug">
-                {opp.title}
-              </h3>
+                <Link href={`/hoc-bong/${opp.slug}`} className="block">
+                  <h3 className="font-bold text-lg mb-3 text-slate-100 group-hover:text-amber-200 transition-colors line-clamp-2 leading-snug">
+                    {opp.title}
+                  </h3>
+                </Link>
 
-              <div className="flex items-center text-slate-300 text-xs mb-4">
-                <Bank size={15} className="mr-1.5 flex-shrink-0 text-amber-400" />
-                <span className="truncate font-medium">{opp.organization}</span>
+                <div className="flex items-center text-slate-300 text-xs mb-4">
+                  <Bank size={15} className="mr-1.5 flex-shrink-0 text-amber-400" />
+                  <span className="truncate font-medium">{opp.organization}</span>
+                </div>
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-amber-400/20 text-xs text-slate-400">
@@ -193,18 +219,35 @@ export default async function Home() {
                   <MapPin size={13} className="text-slate-400" />
                   {opp.studyLocation || 'Toàn cầu'}
                 </span>
-                <span className="text-amber-300 font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
-                  Khám phá 12 khối &rarr;
-                </span>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={`/hoc-bong/${opp.slug}`}
+                    className="text-amber-300 font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-1"
+                  >
+                    <span>Chi tiết</span>
+                    <span>&rarr;</span>
+                  </Link>
+                  {opp.canonicalUrl && (
+                    <a
+                      href={opp.canonicalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1 rounded text-slate-400 hover:text-amber-300 transition-colors"
+                      title="Đến trang tuyển sinh / học bổng gốc"
+                    >
+                      <ArrowSquareOut size={14} weight="bold" />
+                    </a>
+                  )}
+                </div>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       </section>
 
       {/* Khám phá theo danh mục (Sapphire, Emerald, Amethyst Liquid Glass) */}
       <section>
-        <h2 className="text-2xl sm:text-3xl font-extrabold font-serif text-slate-100 mb-8">
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-100 mb-8">
           Khám Phá Theo Danh Mục
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -216,7 +259,7 @@ export default async function Home() {
               <div className="w-12 h-12 rounded-2xl liquid-glass flex items-center justify-center text-2xl mb-4 border border-sky-400/40">
                 🎓
               </div>
-              <h3 className="text-xl font-bold text-sky-200 mb-2 group-hover:text-sky-100 font-serif">
+              <h3 className="text-xl font-bold text-sky-200 mb-2 group-hover:text-sky-100">
                 Học Bổng Tài Trợ
               </h3>
               <p className="text-xs text-slate-300 leading-relaxed">
@@ -236,7 +279,7 @@ export default async function Home() {
               <div className="w-12 h-12 rounded-2xl liquid-glass flex items-center justify-center text-2xl mb-4 border border-emerald-400/40">
                 🏛️
               </div>
-              <h3 className="text-xl font-bold text-emerald-200 mb-2 group-hover:text-emerald-100 font-serif">
+              <h3 className="text-xl font-bold text-emerald-200 mb-2 group-hover:text-emerald-100">
                 Tuyển Sinh Đại Học
               </h3>
               <p className="text-xs text-slate-300 leading-relaxed">
@@ -256,7 +299,7 @@ export default async function Home() {
               <div className="w-12 h-12 rounded-2xl liquid-glass flex items-center justify-center text-2xl mb-4 border border-amber-400/40">
                 🔬
               </div>
-              <h3 className="text-xl font-bold text-amber-200 mb-2 group-hover:text-amber-100 font-serif">
+              <h3 className="text-xl font-bold text-amber-200 mb-2 group-hover:text-amber-100">
                 Sau Đại Học (Thạc sĩ, Tiến sĩ)
               </h3>
               <p className="text-xs text-slate-300 leading-relaxed">
@@ -277,7 +320,7 @@ export default async function Home() {
             <ShieldCheck size={16} weight="fill" />
             <span>Thuật Toán Phân Khúc 2-3-2</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-serif text-slate-100 tracking-tight">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-100 tracking-tight">
             Định Vị Hồ Sơ & Nhận Chiến Lược
           </h2>
           <p className="text-sm sm:text-base text-slate-300 font-light leading-relaxed">

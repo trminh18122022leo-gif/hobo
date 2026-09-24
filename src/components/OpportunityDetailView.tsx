@@ -220,15 +220,15 @@ export default function OpportunityDetailView({
 
           {/* Các nút hành động chính */}
           <div className="flex flex-wrap items-center gap-3 mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
-            {/* Nút nộp hồ sơ (Điểm rời trang duy nhất) */}
+            {/* Nút nộp hồ sơ / đến trang tuyển sinh gốc */}
             <a
               href={opportunity.canonicalUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold shadow-lg shadow-primary-600/20 transition text-sm"
+              className="inline-flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 text-slate-950 rounded-xl font-extrabold shadow-[0_0_25px_rgba(212,175,55,0.35)] hover:brightness-110 active:scale-95 transition-all text-sm group"
             >
-              <span>Nộp hồ sơ chính thức</span>
-              <ArrowSquareOut size={18} weight="bold" />
+              <span>Đến Trang Tuyển Sinh / Nộp Hồ Sơ Gốc</span>
+              <ArrowSquareOut size={18} weight="bold" className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
             </a>
 
             {/* Nút Theo dõi Kanban (B.6) */}

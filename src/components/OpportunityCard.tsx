@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { CalendarBlank, MapPin, Bank, WarningCircle, Scales, Sparkle, Clock } from '@phosphor-icons/react';
+import { CalendarBlank, MapPin, Bank, WarningCircle, Scales, Sparkle, Clock, ArrowSquareOut } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useCompare } from '@/context/CompareContext';
@@ -19,6 +19,7 @@ interface OpportunityCardProps {
   fieldTags?: string[];
   lastVerifiedAt: string;
   rawOpportunity?: any;
+  canonicalUrl?: string | null;
 }
 
 export default function OpportunityCard({
@@ -33,6 +34,7 @@ export default function OpportunityCard({
   fieldTags,
   lastVerifiedAt,
   rawOpportunity,
+  canonicalUrl,
 }: OpportunityCardProps) {
   const { addToCompare, isInCompare } = useCompare();
   const numericId = Number(id) || 0;
@@ -175,14 +177,28 @@ export default function OpportunityCard({
             </div>
           )}
 
-          <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
+          <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between gap-2">
             <Link
               href={linkPath}
-              className="text-xs font-bold text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 group-hover:translate-x-1 transition-transform"
+              className="text-xs font-bold text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
             >
-              <span>Xem chi tiết 12 khối</span>
+              <span>Xem chi tiết</span>
               <span>&rarr;</span>
             </Link>
+
+            {canonicalUrl && (
+              <a
+                href={canonicalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-[11px] font-medium text-slate-300 hover:text-amber-300 px-2.5 py-1 rounded-xl liquid-glass border border-white/10 hover:border-amber-400/40 flex items-center gap-1 transition-all"
+                title="Đến trang tuyển sinh / học bổng chính thức của trường"
+              >
+                <span>Nguồn gốc</span>
+                <ArrowSquareOut size={13} weight="bold" />
+              </a>
+            )}
           </div>
         </div>
 

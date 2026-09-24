@@ -83,7 +83,7 @@ model Opportunity {
   degreeLevel      String?   // JSON array: ["bachelor","master","phd"]
   studyLocation    String?
   fundingType      String?   // full | partial | tuition | stipend | one_time
-  fundingValueVnd  Int?
+  fundingValueVnd  Float?
   bondYears        Int?
   applyStart       DateTime?
   deadline         DateTime?

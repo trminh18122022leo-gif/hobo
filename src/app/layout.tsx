@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Be_Vietnam_Pro, JetBrains_Mono, Playfair_Display } from 'next/font/google';
+import { Be_Vietnam_Pro, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -8,19 +8,13 @@ import CompareFloatingBar from '@/components/CompareFloatingBar';
 
 const beVietnamPro = Be_Vietnam_Pro({
   subsets: ['vietnamese', 'latin'],
-  weight: ['300', '400', '500', '600', '700', '800'],
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
   variable: '--font-be-vietnam-pro',
 });
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-jetbrains-mono',
-});
-
-const playfair = Playfair_Display({
-  subsets: ['vietnamese', 'latin'],
-  weight: ['600', '700', '800', '900'],
-  variable: '--font-playfair',
 });
 
 export const metadata: Metadata = {
@@ -36,7 +30,7 @@ export default function RootLayout({
   return (
     <html lang="vi" className="dark" suppressHydrationWarning>
       <body
-        className={`${beVietnamPro.variable} ${jetbrainsMono.variable} ${playfair.variable} antialiased min-h-screen flex flex-col bg-[#05060A] text-slate-100 relative selection:bg-amber-400/30 selection:text-amber-200`}
+        className={`${beVietnamPro.variable} ${jetbrainsMono.variable} antialiased min-h-screen flex flex-col bg-[#05060A] text-slate-100 relative selection:bg-amber-400/30 selection:text-amber-200 font-sans`}
       >
         {/* Background Ambient Liquid Glass Mesh Orbs */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">

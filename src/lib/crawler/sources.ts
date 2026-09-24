@@ -26,6 +26,8 @@ export const INITIAL_SOURCES: SourceConfig[] = [
   { name: 'RMIT Vietnam', baseUrl: 'https://rmit.edu.vn', kind: 'UNIVERSITY', tier: 'A', fetchStrategy: 'HTML' },
   { name: 'Fulbright Vietnam', baseUrl: 'https://fulbright.edu.vn', kind: 'UNIVERSITY', tier: 'A', fetchStrategy: 'HTML' },
   { name: 'ĐH FPT', baseUrl: 'https://fpt.edu.vn', kind: 'UNIVERSITY', tier: 'A', fetchStrategy: 'HTML' },
+  { name: 'Tuyển Sinh Số', baseUrl: 'https://tuyensinhso.vn', kind: 'PORTAL', tier: 'A', fetchStrategy: 'HTML' },
+  { name: 'IDP Vietnam - Học Bổng Du Học', baseUrl: 'https://www.idp.com', kind: 'PORTAL', tier: 'A', fetchStrategy: 'HTML' },
 
   // ── Tier B: Regional Universities, Specialized Academies & Governments (Quét 6h/lần) ─
   { name: 'ĐH Đà Nẵng (UD)', baseUrl: 'https://udn.vn', kind: 'UNIVERSITY', tier: 'B', fetchStrategy: 'HTML' },

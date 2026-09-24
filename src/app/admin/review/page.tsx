@@ -156,7 +156,7 @@ export default function AdminReviewPage() {
                 ← Bảng điều khiển Admin
               </Link>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold font-serif text-slate-100 flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 flex items-center gap-2.5">
               <ShieldCheck size={28} weight="fill" className="text-amber-300" />
               <span>Thẩm Định & Xác Thực Học Bổng</span>
             </h1>
@@ -196,19 +196,19 @@ export default function AdminReviewPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="liquid-glass p-5 rounded-2xl border border-white/10 shadow-lg">
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">Tổng Học Bổng</p>
-              <p className="text-3xl font-extrabold text-slate-100 mt-1 font-serif">{stats.totalCount}</p>
+              <p className="text-3xl font-extrabold text-slate-100 mt-1">{stats.totalCount}</p>
             </div>
             <div className="liquid-glass p-5 rounded-2xl border border-emerald-500/30 shadow-lg">
               <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 font-mono">Đã Thẩm Định ✅</p>
-              <p className="text-3xl font-extrabold text-emerald-400 mt-1 font-serif">{stats.verifiedCount}</p>
+              <p className="text-3xl font-extrabold text-emerald-400 mt-1">{stats.verifiedCount}</p>
             </div>
             <div className="liquid-glass p-5 rounded-2xl border border-amber-500/30 shadow-lg">
               <p className="text-[10px] font-bold uppercase tracking-wider text-amber-300 font-mono">Chờ Kiểm Duyệt ⚠️</p>
-              <p className="text-3xl font-extrabold text-amber-300 mt-1 font-serif">{stats.unverifiedCount}</p>
+              <p className="text-3xl font-extrabold text-amber-300 mt-1">{stats.unverifiedCount}</p>
             </div>
             <div className="liquid-glass p-5 rounded-2xl border border-rose-500/30 shadow-lg">
               <p className="text-[10px] font-bold uppercase tracking-wider text-rose-400 font-mono">Link Chết / 404 ❌</p>
-              <p className="text-3xl font-extrabold text-rose-400 mt-1 font-serif">{stats.deadLinkCount}</p>
+              <p className="text-3xl font-extrabold text-rose-400 mt-1">{stats.deadLinkCount}</p>
             </div>
           </div>
         )}

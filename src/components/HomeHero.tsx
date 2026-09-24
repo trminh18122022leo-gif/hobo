@@ -46,10 +46,10 @@ export default function HomeHero({ stats }: HomeHeroProps) {
       {/* Main Luxury Title */}
       <motion.h1
         variants={itemVariants}
-        className="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight font-serif text-slate-100 max-w-4xl mx-auto leading-[1.1]"
+        className="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight text-slate-100 max-w-4xl mx-auto leading-[1.1]"
       >
         Cổng Học Bổng & Tuyển Sinh <br />
-        <span className="text-gold-gradient font-serif">Chuẩn Xác Hàng Đầu</span>
+        <span className="text-gold-gradient">Chuẩn Xác Hàng Đầu</span>
       </motion.h1>
 
       <motion.p
@@ -88,7 +88,7 @@ export default function HomeHero({ stats }: HomeHeroProps) {
         className="grid grid-cols-3 max-w-2xl mx-auto gap-4 pt-14"
       >
         <div className="liquid-glass rounded-2xl p-4 border border-white/10 relative overflow-hidden group hover:border-amber-400/30 transition-colors">
-          <div className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gold-gradient font-serif">
+          <div className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gold-gradient">
             {stats.totalScholarships > 0 ? `${stats.totalScholarships}+` : '52+'}
           </div>
           <div className="text-xs uppercase tracking-wider text-slate-400 mt-1 font-mono">
@@ -97,7 +97,7 @@ export default function HomeHero({ stats }: HomeHeroProps) {
         </div>
 
         <div className="liquid-glass rounded-2xl p-4 border border-white/10 relative overflow-hidden group hover:border-sky-400/30 transition-colors">
-          <div className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-sapphire-gradient font-serif">
+          <div className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-sapphire-gradient">
             {stats.universities > 0 ? stats.universities : '50+'}
           </div>
           <div className="text-xs uppercase tracking-wider text-slate-400 mt-1 font-mono">
@@ -106,7 +106,7 @@ export default function HomeHero({ stats }: HomeHeroProps) {
         </div>
 
         <div className="liquid-glass rounded-2xl p-4 border border-white/10 relative overflow-hidden group hover:border-emerald-400/30 transition-colors">
-          <div className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-emerald-400 font-serif">
+          <div className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-emerald-400">
             100%
           </div>
           <div className="text-xs uppercase tracking-wider text-slate-400 mt-1 font-mono">

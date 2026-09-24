@@ -10,9 +10,9 @@ export default function Footer() {
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl liquid-glass-gold flex items-center justify-center border border-amber-400/40">
-                <span className="text-amber-300 font-serif font-black text-base">H</span>
+                <span className="text-amber-300 font-black text-base">H</span>
               </div>
-              <span className="text-lg font-bold text-gold-gradient font-serif uppercase tracking-wider">
+              <span className="text-lg font-bold text-gold-gradient uppercase tracking-wider">
                 Học Bổng Việt Nam
               </span>
             </div>

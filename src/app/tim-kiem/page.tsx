@@ -104,7 +104,7 @@ function SearchContent() {
     <div className="space-y-8 py-4">
       {/* Header Search Banner */}
       <div className="liquid-glass-gold p-8 rounded-3xl border border-amber-400/30 text-center relative overflow-hidden shadow-2xl">
-        <h1 className="text-3xl sm:text-4xl font-extrabold font-serif text-slate-100 tracking-tight">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-100 tracking-tight">
           Khám Phá & Tra Cứu Học Bổng
         </h1>
         <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto mt-2 font-light">
@@ -309,6 +309,7 @@ function SearchContent() {
                   fieldTags={opp.fieldCodes}
                   lastVerifiedAt={opp.lastVerifiedAt}
                   rawOpportunity={opp}
+                  canonicalUrl={opp.canonicalUrl}
                 />
               ))}
             </div>

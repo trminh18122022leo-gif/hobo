@@ -2,6 +2,8 @@ import cron from 'node-cron';
 import prisma from '@/lib/db';
 import { fetchSource } from './fetcher';
 import { extractOpportunities, calculateRankScore } from './extractor';
+import { crawlTuyensinhso } from './tuyensinhso-crawler';
+import { crawlIdpScholarships } from './idp-crawler';
 
 export type CrawlSummary = {
   sourcesChecked: number;
@@ -195,7 +197,111 @@ export async function runCrawlCycle(): Promise<CrawlSummary> {
       }
       
       // Polite rate limit pause between sources
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(r => setTimeout(r, 1000));
+    }
+
+    // ── Live Crawl for Tuyển Sinh Số & IDP Vietnam ──────────
+    try {
+      const sourceTuyensinhso = await prisma.source.findUnique({ where: { baseUrl: 'https://tuyensinhso.vn' } });
+      if (sourceTuyensinhso) {
+        summary.sourcesChecked++;
+        const tssItems = await crawlTuyensinhso();
+        for (const item of tssItems) {
+          const existing = await prisma.opportunity.findUnique({ where: { slug: item.slug } });
+          await prisma.opportunity.upsert({
+            where: { slug: item.slug },
+            update: {
+              title: item.title,
+              summary: item.summary,
+              deadline: item.deadline,
+              canonicalUrl: item.canonicalUrl,
+              lastVerifiedAt: new Date(),
+            },
+            create: {
+              sourceId: sourceTuyensinhso.id,
+              slug: item.slug,
+              kind: item.kind,
+              title: item.title,
+              organization: item.organization,
+              organizationType: item.organizationType,
+              summary: item.summary,
+              requirements: JSON.stringify(item.requirements),
+              fieldCodes: JSON.stringify(item.fieldCodes),
+              degreeLevel: JSON.stringify(item.degreeLevel),
+              studyLocation: item.studyLocation,
+              fundingType: item.fundingType,
+              fundingValueVnd: item.fundingValueVnd,
+              applyStart: item.applyStart,
+              deadline: item.deadline,
+              canonicalUrl: item.canonicalUrl,
+              rankScore: 88,
+              confidence: 0.95,
+              status: 'published',
+              requiredDocuments: JSON.stringify(item.requiredDocuments),
+              applicationSteps: JSON.stringify(item.applicationSteps),
+              timelineMilestones: JSON.stringify(item.timelineMilestones),
+              benefits: JSON.stringify(item.benefits),
+              selectionRounds: item.selectionRounds,
+              lastVerifiedAt: new Date(),
+              linkStatus: 'alive',
+            },
+          });
+          if (existing) summary.updatedRecords++;
+          else summary.newRecords++;
+        }
+      }
+
+      const sourceIdp = await prisma.source.findUnique({ where: { baseUrl: 'https://www.idp.com' } });
+      if (sourceIdp) {
+        summary.sourcesChecked++;
+        const idpItems = await crawlIdpScholarships();
+        for (const item of idpItems) {
+          const existing = await prisma.opportunity.findUnique({ where: { slug: item.slug } });
+          await prisma.opportunity.upsert({
+            where: { slug: item.slug },
+            update: {
+              title: item.title,
+              summary: item.summary,
+              fundingValueVnd: item.fundingValueVnd,
+              deadline: item.deadline,
+              canonicalUrl: item.canonicalUrl,
+              lastVerifiedAt: new Date(),
+            },
+            create: {
+              sourceId: sourceIdp.id,
+              slug: item.slug,
+              kind: item.kind,
+              title: item.title,
+              organization: item.organization,
+              organizationType: item.organizationType,
+              summary: item.summary,
+              requirements: JSON.stringify(item.requirements),
+              fieldCodes: JSON.stringify(item.fieldCodes),
+              degreeLevel: JSON.stringify(item.degreeLevel),
+              studyLocation: item.studyLocation,
+              fundingType: item.fundingType,
+              fundingValueVnd: item.fundingValueVnd,
+              applyStart: item.applyStart,
+              deadline: item.deadline,
+              canonicalUrl: item.canonicalUrl,
+              rankScore: 98,
+              confidence: 0.98,
+              status: 'published',
+              requiredDocuments: JSON.stringify(item.requiredDocuments),
+              applicationSteps: JSON.stringify(item.applicationSteps),
+              timelineMilestones: JSON.stringify(item.timelineMilestones),
+              benefits: JSON.stringify(item.benefits),
+              selectionRounds: item.selectionRounds,
+              lastVerifiedAt: new Date(),
+              linkStatus: 'alive',
+            },
+          });
+          if (existing) summary.updatedRecords++;
+          else summary.newRecords++;
+        }
+      }
+    } catch (crawlErr) {
+      console.error('Error during Tuyensinhso / IDP crawler execution:', crawlErr);
     }
 
     await promoteUrgentSources();
