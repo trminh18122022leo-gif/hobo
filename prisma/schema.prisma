@@ -103,6 +103,14 @@ model Opportunity {
   contact            String?  // JSON: { email, phone, office_hours }
   selectionRounds    Int      @default(0)
 
+  // Bổ sung v2.3: Link Checking & Admin Verification
+  lastLinkCheckAt    DateTime?
+  linkStatus         String   @default("unknown") // alive | dead | redirect | unknown
+  linkCheckCount     Int      @default(0)
+  verifiedBy         String?  // Admin user ID
+  verifiedAt         DateTime?
+  verifyNote         String?  // Ghi chú thẩm định
+
   source          Source              @relation(fields: [sourceId], references: [id])
   rawDocument     RawDocument?        @relation(fields: [rawDocumentId], references: [id])
   versions        OpportunityVersion[]

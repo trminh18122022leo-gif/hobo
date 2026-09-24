@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio';
 import crypto from 'crypto';
 import { isUrlSafe } from './url-validator';
+import { fetchRssSource } from './rss-fetcher';
 
 export interface Source {
   id: string;
@@ -60,8 +61,16 @@ export async function fetchSource(source: Source): Promise<FetchResult | null> {
     throw new Error(`SSRF blocked: Unsafe or forbidden source URL "${source.baseUrl}"`);
   }
 
+  // 1. Dispatch RSS strategy if configured
+  if (source.fetchStrategy?.toUpperCase() === 'RSS') {
+    return fetchRssSource(source.baseUrl);
+  }
+
+  // 2. Default HTTP / HTML strategy
   const headers: Record<string, string> = {
     'User-Agent': process.env.BOT_USER_AGENT || 'HocBongBot/1.0',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'vi,en-US;q=0.9,en;q=0.8',
   };
 
   if (source.etag) {
@@ -77,7 +86,7 @@ export async function fetchSource(source: Source): Promise<FetchResult | null> {
 
     const response = await fetch(source.baseUrl, {
       headers,
-      signal: controller.signal as any
+      signal: controller.signal as any,
     });
 
     clearTimeout(timeoutId);
@@ -103,7 +112,7 @@ export async function fetchSource(source: Source): Promise<FetchResult | null> {
       cleanText,
       etag: response.headers.get('etag') || undefined,
       lastModified: response.headers.get('last-modified') || undefined,
-      contentHash
+      contentHash,
     };
   } catch (error) {
     console.error(`Error fetching source ${source.name}:`, error);

@@ -33,7 +33,7 @@ export async function runCrawlCycle(): Promise<CrawlSummary> {
 
         summary.sourcesChecked++;
         // Fetch source content
-        const result = await fetchSource({
+        const sourceData = {
           id: String(source.id),
           name: source.name,
           baseUrl: source.baseUrl,
@@ -50,7 +50,9 @@ export async function runCrawlCycle(): Promise<CrawlSummary> {
           lastFetchedAt: source.lastFetchedAt,
           lastChangedAt: source.lastChangedAt,
           isActive: source.isActive,
-        });
+        };
+
+        const result = await fetchSource(sourceData);
 
         if (result) {
           summary.sourcesChanged++;
@@ -75,51 +77,38 @@ export async function runCrawlCycle(): Promise<CrawlSummary> {
             },
           });
 
-          // Extract opportunities
-          const opps = extractOpportunities(result.html, result.cleanText, {
-            id: String(source.id),
-            name: source.name,
-            baseUrl: source.baseUrl,
-            kind: source.kind,
-            tier: source.tier,
-            fetchStrategy: source.fetchStrategy,
-            adapterKey: source.adapterKey,
-            etag: source.etag,
-            lastModified: source.lastModified,
-            contentHash: source.contentHash,
-            trustScore: source.trustScore * 100,
-            robotsOk: source.robotsOk,
-            consecutiveFailures: source.consecutiveFailures,
-            lastFetchedAt: source.lastFetchedAt,
-            lastChangedAt: source.lastChangedAt,
-            isActive: source.isActive,
-          });
+          // Extract opportunities (async - supports LLM & heuristics)
+          const opps = await extractOpportunities(result.html, result.cleanText, sourceData);
           
           for (const opp of opps) {
-            const rankScore = calculateRankScore(opp, {
-              id: String(source.id),
-              name: source.name,
-              baseUrl: source.baseUrl,
-              kind: source.kind,
-              tier: source.tier,
-              fetchStrategy: source.fetchStrategy,
-              adapterKey: source.adapterKey,
-              etag: source.etag,
-              lastModified: source.lastModified,
-              contentHash: source.contentHash,
-              trustScore: source.trustScore * 100,
-              robotsOk: source.robotsOk,
-              consecutiveFailures: source.consecutiveFailures,
-              lastFetchedAt: source.lastFetchedAt,
-              lastChangedAt: source.lastChangedAt,
-              isActive: source.isActive,
-            });
+            const rankScore = calculateRankScore(opp, sourceData);
 
             const existing = await prisma.opportunity.findUnique({
               where: { slug: opp.slug },
             });
 
             if (existing) {
+              // Record version change if key fields modified
+              const hasChanged = 
+                existing.summary !== opp.summary ||
+                existing.deadline?.getTime() !== opp.deadline?.getTime() ||
+                existing.fundingValueVnd !== opp.fundingValueVnd;
+
+              if (hasChanged) {
+                await prisma.opportunityVersion.create({
+                  data: {
+                    opportunityId: existing.id,
+                    diff: JSON.stringify({
+                      previousDeadline: existing.deadline,
+                      newDeadline: opp.deadline,
+                      previousFunding: existing.fundingValueVnd,
+                      newFunding: opp.fundingValueVnd,
+                      confidence: opp.confidence,
+                    }),
+                  },
+                });
+              }
+
               await prisma.opportunity.update({
                 where: { id: existing.id },
                 data: {
@@ -127,9 +116,16 @@ export async function runCrawlCycle(): Promise<CrawlSummary> {
                   fundingType: opp.fundingType,
                   fundingValueVnd: opp.fundingValueVnd ? Math.round(opp.fundingValueVnd) : null,
                   deadline: opp.deadline,
+                  applyStart: opp.applyStart,
                   rankScore: rankScore,
+                  confidence: opp.confidence,
                   lastVerifiedAt: now,
                   rawDocumentId: rawDoc.id,
+                  requiredDocuments: opp.requiredDocuments,
+                  applicationSteps: opp.applicationSteps,
+                  timelineMilestones: opp.timelineMilestones,
+                  benefits: opp.benefits,
+                  faq: opp.faq,
                 },
               });
               summary.updatedRecords++;
@@ -139,9 +135,10 @@ export async function runCrawlCycle(): Promise<CrawlSummary> {
                   sourceId: source.id,
                   rawDocumentId: rawDoc.id,
                   slug: opp.slug,
-                  kind: opp.fundingType === 'CASH' ? 'scholarship_corporate' : 'scholarship_domestic',
+                  kind: opp.kind,
                   title: opp.title,
                   organization: opp.organization,
+                  organizationType: opp.organizationType,
                   summary: opp.summary,
                   requirements: opp.requirements,
                   fieldCodes: opp.fieldCodes,
@@ -150,10 +147,16 @@ export async function runCrawlCycle(): Promise<CrawlSummary> {
                   fundingType: opp.fundingType,
                   fundingValueVnd: opp.fundingValueVnd ? Math.round(opp.fundingValueVnd) : null,
                   deadline: opp.deadline,
-                  canonicalUrl: source.baseUrl,
+                  applyStart: opp.applyStart,
+                  canonicalUrl: opp.canonicalUrl || source.baseUrl,
                   rankScore: rankScore,
-                  confidence: 70,
+                  confidence: opp.confidence,
                   status: 'published',
+                  requiredDocuments: opp.requiredDocuments,
+                  applicationSteps: opp.applicationSteps,
+                  timelineMilestones: opp.timelineMilestones,
+                  benefits: opp.benefits,
+                  faq: opp.faq,
                 },
               });
               summary.newRecords++;

@@ -1,0 +1,36 @@
+name: Automated Scholarship Crawler & Link Health Check
+
+on:
+  schedule:
+    - cron: '0 */4 * * *' # Every 4 hours: Run crawl cycle to fetch newest scholarships
+    - cron: '30 2 * * *'  # Daily at 02:30 UTC: Run deep dead link check
+  workflow_dispatch:
+
+jobs:
+  crawl-cycle:
+    name: Trigger Live Crawl Cycle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Crawler API
+        run: |
+          if [ -z "${{ secrets.APP_URL }}" ]; then
+            echo "Skipping external HTTP trigger: APP_URL secret is not set yet in GitHub Secrets."
+            exit 0
+          fi
+          curl -f -X POST "${{ secrets.APP_URL }}/api/crawl/trigger" \
+            -H "Authorization: Bearer ${{ secrets.CRAWL_API_SECRET }}" \
+            -H "Content-Type: application/json"
+
+  check-links:
+    name: Verify Scholarship Links
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Link Checker API
+        run: |
+          if [ -z "${{ secrets.APP_URL }}" ]; then
+            echo "Skipping external HTTP trigger: APP_URL secret is not set yet in GitHub Secrets."
+            exit 0
+          fi
+          curl -f -X POST "${{ secrets.APP_URL }}/api/crawl/check-links" \
+            -H "Authorization: Bearer ${{ secrets.CRAWL_API_SECRET }}" \
+            -H "Content-Type: application/json"
