@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "seed": "tsx scripts/seed.ts",
+    "worker": "tsx src/worker.ts",
+    "start:worker": "tsx src/worker.ts",
     "db:push": "prisma db push",
     "db:reset": "prisma db push --force-reset && tsx scripts/seed.ts",
     "db:studio": "prisma studio",
