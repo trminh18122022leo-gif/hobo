@@ -1,5 +1,3 @@
-process.env.DATABASE_URL = 'file:./prisma/dev.db';
-
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
