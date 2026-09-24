@@ -11,6 +11,7 @@ import {
   CaretLeft,
   CaretRight,
   GraduationCap,
+  Sparkle,
 } from '@phosphor-icons/react';
 import { OpportunityCard as OppCardType, KIND_LABELS, FUNDING_LABELS } from '@/types';
 
@@ -28,7 +29,7 @@ function SearchContent() {
   const [error, setError] = useState(false);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
-  // Lấy các filters hiện tại từ URL
+  // Filters from URL
   const currentKinds = searchParams.getAll('kind');
   const currentFunding = searchParams.getAll('fundingType');
   const currentDegree = searchParams.getAll('degreeLevel');
@@ -60,25 +61,26 @@ function SearchContent() {
 
   useEffect(() => {
     fetchResults();
+    setQuery(searchParams.get('q') || '');
   }, [searchParams]);
 
-  const updateParam = (key: string, value: string, isArray: boolean = false) => {
+  const updateParam = (key: string, value: string, isArray = false) => {
     const params = new URLSearchParams(searchParams.toString());
-    params.set('page', '1'); // Reset về trang 1
-
     if (isArray) {
-      const existing = params.getAll(key);
-      params.delete(key);
-      if (existing.includes(value)) {
-        existing.filter((v) => v !== value).forEach((v) => params.append(key, v));
+      const currentValues = params.getAll(key);
+      if (currentValues.includes(value)) {
+        params.delete(key);
+        currentValues
+          .filter((v) => v !== value)
+          .forEach((v) => params.append(key, v));
       } else {
-        [...existing, value].forEach((v) => params.append(key, v));
+        params.append(key, value);
       }
     } else {
       if (value) params.set(key, value);
       else params.delete(key);
     }
-
+    params.set('page', '1');
     router.push(`/tim-kiem?${params.toString()}`);
   };
 
@@ -88,37 +90,45 @@ function SearchContent() {
   };
 
   const clearAllFilters = () => {
-    setQuery('');
     router.push('/tim-kiem');
   };
 
-  return (
-    <div className="py-6 space-y-6">
-      {/* Search Header */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-            <GraduationCap size={32} className="text-primary-600" />
-            Tìm kiếm Học bổng & Tuyển sinh
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Tổng hợp dữ liệu chính xác từ hơn 30 đại học và tổ chức cấp học bổng hàng đầu Việt Nam.
-          </p>
-        </div>
+  const hasActiveFilters =
+    currentKinds.length > 0 ||
+    currentFunding.length > 0 ||
+    currentDegree.length > 0 ||
+    Boolean(currentLocation) ||
+    Boolean(searchParams.get('q'));
 
-        {/* Thanh tìm kiếm */}
-        <form onSubmit={handleSearchSubmit} className="relative w-full md:w-96">
+  return (
+    <div className="space-y-8 py-4">
+      {/* Header Search Banner */}
+      <div className="liquid-glass-gold p-8 rounded-3xl border border-amber-400/30 text-center relative overflow-hidden shadow-2xl">
+        <h1 className="text-3xl sm:text-4xl font-extrabold font-serif text-slate-100 tracking-tight">
+          Khám Phá & Tra Cứu Học Bổng
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto mt-2 font-light">
+          Hệ thống tra cứu tự động từ 50+ trường đại học và cơ quan học bổng chính quy 2026 – 2027.
+        </p>
+
+        {/* Search Bar */}
+        <form
+          onSubmit={handleSearchSubmit}
+          className="max-w-2xl mx-auto mt-6 relative flex items-center p-1.5 rounded-2xl liquid-glass border border-white/20 shadow-xl"
+        >
+          <div className="pl-3.5 text-slate-400">
+            <MagnifyingGlass size={20} weight="bold" />
+          </div>
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Tìm theo tên học bổng, trường, ngành..."
-            className="w-full pl-10 pr-24 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-primary-500 outline-none shadow-sm transition"
+            placeholder="Nhập tên học bổng, trường đại học, ngành học..."
+            className="w-full px-4 py-3 bg-transparent border-none outline-none text-sm text-slate-100 placeholder-slate-500 font-medium"
           />
-          <MagnifyingGlass size={18} className="absolute left-3.5 top-3.5 text-slate-400" />
           <button
             type="submit"
-            className="absolute right-1.5 top-1.5 px-4 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-xs font-semibold shadow-sm transition"
+            className="px-6 py-2.5 bg-gradient-to-r from-amber-300 to-amber-500 text-slate-950 font-bold rounded-xl text-xs shadow-md hover:brightness-110 active:scale-95 transition"
           >
             Tìm
           </button>
@@ -126,44 +136,47 @@ function SearchContent() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-8">
-        {/* Bộ lọc Sidebar Desktop */}
-        <aside className="hidden md:block w-64 flex-shrink-0 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-1.5">
-              <Funnel size={18} />
-              <span>Bộ lọc tìm kiếm</span>
+        {/* Desktop Filter Sidebar */}
+        <aside className="hidden md:block w-72 flex-shrink-0 liquid-glass rounded-3xl p-6 border border-white/10 space-y-6 h-fit shadow-xl">
+          <div className="flex justify-between items-center pb-4 border-b border-white/10">
+            <h2 className="font-bold text-sm text-slate-200 flex items-center gap-2">
+              <Funnel size={16} className="text-amber-400" />
+              <span>Bộ Lọc Chuẩn Xác</span>
             </h2>
-            {(currentKinds.length > 0 || currentFunding.length > 0 || currentDegree.length > 0 || currentLocation || query) && (
-              <button onClick={clearAllFilters} className="text-xs text-red-500 hover:underline">
-                Xóa tất cả
+            {hasActiveFilters && (
+              <button
+                onClick={clearAllFilters}
+                className="text-xs text-amber-300 hover:underline font-semibold"
+              >
+                Đặt lại
               </button>
             )}
           </div>
 
-          {/* Lọc theo Loại chương trình */}
-          <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
-            <h3 className="font-semibold text-xs text-slate-400 uppercase tracking-wider mb-3">
-              Loại cơ hội
+          {/* Filter by Opportunity Kind */}
+          <div>
+            <h3 className="font-mono text-xs font-bold text-amber-200 uppercase tracking-wider mb-3">
+              Loại Chương Trình
             </h3>
-            <div className="space-y-2 text-sm">
+            <div className="space-y-2.5 text-xs">
               {[
                 { id: 'undergraduate', label: 'Tuyển sinh Đại học' },
                 { id: 'graduate', label: 'Sau đại học (ThS, TS)' },
                 { id: 'scholarship_domestic', label: 'Học bổng trong nước' },
                 { id: 'scholarship_foreign', label: 'Học bổng nước ngoài' },
-                { id: 'scholarship_corporate', label: 'Học bổng doanh nghiệp' },
+                { id: 'scholarship_corporate', label: 'Học bổng tập đoàn' },
               ].map((k) => (
-                <label key={k.id} className="flex items-center justify-between cursor-pointer text-slate-700 dark:text-slate-300 hover:text-primary-600">
-                  <div className="flex items-center space-x-2">
+                <label key={k.id} className="flex items-center justify-between cursor-pointer text-slate-300 hover:text-white transition">
+                  <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
                       checked={currentKinds.includes(k.id)}
                       onChange={() => updateParam('kind', k.id, true)}
-                      className="rounded text-primary-600 focus:ring-primary-500"
+                      className="rounded text-amber-400 focus:ring-amber-400 bg-slate-900 border-white/20"
                     />
                     <span>{k.label}</span>
                   </div>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-[10px] text-slate-500 font-mono">
                     ({facets.kind?.[k.id] || 0})
                   </span>
                 </label>
@@ -171,29 +184,29 @@ function SearchContent() {
             </div>
           </div>
 
-          {/* Lọc theo Mức tài trợ */}
-          <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
-            <h3 className="font-semibold text-xs text-slate-400 uppercase tracking-wider mb-3">
-              Mức tài trợ
+          {/* Filter by Funding Type */}
+          <div className="border-t border-white/10 pt-4">
+            <h3 className="font-mono text-xs font-bold text-amber-200 uppercase tracking-wider mb-3">
+              Mức Tài Trợ
             </h3>
-            <div className="space-y-2 text-sm">
+            <div className="space-y-2.5 text-xs">
               {[
-                { id: 'full', label: 'Toàn phần' },
+                { id: 'full', label: 'Toàn phần (100%)' },
                 { id: 'partial', label: 'Bán phần' },
                 { id: 'tuition', label: 'Miễn học phí' },
                 { id: 'stipend', label: 'Trợ cấp sinh hoạt' },
               ].map((f) => (
-                <label key={f.id} className="flex items-center justify-between cursor-pointer text-slate-700 dark:text-slate-300 hover:text-primary-600">
-                  <div className="flex items-center space-x-2">
+                <label key={f.id} className="flex items-center justify-between cursor-pointer text-slate-300 hover:text-white transition">
+                  <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
                       checked={currentFunding.includes(f.id)}
                       onChange={() => updateParam('fundingType', f.id, true)}
-                      className="rounded text-primary-600 focus:ring-primary-500"
+                      className="rounded text-amber-400 focus:ring-amber-400 bg-slate-900 border-white/20"
                     />
                     <span>{f.label}</span>
                   </div>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-[10px] text-slate-500 font-mono">
                     ({facets.fundingType?.[f.id] || 0})
                   </span>
                 </label>
@@ -201,170 +214,155 @@ function SearchContent() {
             </div>
           </div>
 
-          {/* Lọc theo Địa điểm học tập */}
-          <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
-            <h3 className="font-semibold text-xs text-slate-400 uppercase tracking-wider mb-3">
-              Khu vực học tập
+          {/* Filter by Study Location */}
+          <div className="border-t border-white/10 pt-4">
+            <h3 className="font-mono text-xs font-bold text-amber-200 uppercase tracking-wider mb-3">
+              Địa Điểm Đào Tạo
             </h3>
             <select
               value={currentLocation}
               onChange={(e) => updateParam('studyLocation', e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:ring-primary-500"
+              className="w-full p-2.5 rounded-xl liquid-glass border border-white/10 text-xs text-slate-200 focus:border-amber-400/60 outline-none"
             >
-              <option value="">Tất cả địa điểm</option>
-              <option value="Hà Nội">Hà Nội</option>
-              <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
-              <option value="Đà Nẵng">Đà Nẵng</option>
-              <option value="Cần Thơ">Cần Thơ</option>
-              <option value="Vương quốc Anh">Vương quốc Anh</option>
-              <option value="Mỹ">Mỹ</option>
-              <option value="Nhật Bản">Nhật Bản</option>
-              <option value="Hàn Quốc">Hàn Quốc</option>
-              <option value="Úc">Úc</option>
+              <option value="" className="bg-slate-950">Tất cả địa điểm</option>
+              <option value="Hà Nội" className="bg-slate-950">Hà Nội</option>
+              <option value="TP. Hồ Chí Minh" className="bg-slate-950">TP. Hồ Chí Minh</option>
+              <option value="Đà Nẵng" className="bg-slate-950">Đà Nẵng</option>
+              <option value="Vương quốc Anh" className="bg-slate-950">Vương quốc Anh</option>
+              <option value="Mỹ" className="bg-slate-950">Mỹ</option>
+              <option value="Nhật Bản" className="bg-slate-950">Nhật Bản</option>
+              <option value="Hàn Quốc" className="bg-slate-950">Hàn Quốc</option>
+              <option value="Úc" className="bg-slate-950">Úc</option>
             </select>
           </div>
         </aside>
 
-        {/* Nội dung kết quả */}
-        <main className="flex-1">
-          {/* Thanh toolbar kết quả */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
-            <div className="text-xs text-slate-600 dark:text-slate-400">
-              Tìm thấy <strong className="text-slate-900 dark:text-white font-bold">{total}</strong> cơ hội phù hợp
+        {/* Main Results Container */}
+        <main className="flex-1 space-y-6">
+          {/* Results Toolbar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl liquid-glass border border-white/10">
+            <div className="text-xs text-slate-400">
+              Tìm thấy <strong className="text-amber-300 font-bold font-mono">{total}</strong> cơ hội học bổng & tuyển sinh
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsMobileFiltersOpen(true)}
-                className="md:hidden px-3 py-1.5 flex items-center gap-1.5 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold bg-white dark:bg-slate-900"
+                className="md:hidden px-3 py-2 flex items-center gap-1.5 liquid-glass rounded-xl text-xs font-semibold text-slate-200"
               >
-                <Faders size={16} /> <span>Lọc</span>
+                <Faders size={16} /> <span>Bộ Lọc</span>
               </button>
 
               <select
                 value={currentSort}
                 onChange={(e) => updateParam('sort', e.target.value)}
-                className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium focus:ring-primary-500"
+                className="px-3 py-2 rounded-xl liquid-glass border border-white/10 text-xs text-slate-200 font-medium focus:border-amber-400/60 outline-none"
               >
-                <option value="relevance">Độ phù hợp cao nhất</option>
-                <option value="deadline">Sắp hết hạn trước</option>
-                <option value="rank">Điểm uy tín cao nhất</option>
-                <option value="newest">Mới cập nhật</option>
+                <option value="relevance" className="bg-slate-950">Độ phù hợp cao nhất</option>
+                <option value="deadline" className="bg-slate-950">Sắp hết hạn trước</option>
+                <option value="rank" className="bg-slate-950">Điểm uy tín cao nhất</option>
+                <option value="newest" className="bg-slate-950">Mới cập nhật</option>
               </select>
             </div>
           </div>
 
+          {/* Cards Grid */}
           {loading ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-pulse">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="h-64 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+                <div key={i} className="h-72 liquid-glass rounded-3xl border border-white/10" />
               ))}
             </div>
           ) : error ? (
-            <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
-              <p className="text-red-500 mb-4 font-semibold text-sm">Đã xảy ra lỗi khi tìm kiếm dữ liệu.</p>
-              <button onClick={fetchResults} className="px-5 py-2 bg-primary-600 text-white rounded-xl text-xs font-semibold">
-                Thử lại
-              </button>
+            <div className="p-12 text-center liquid-glass rounded-3xl text-rose-400 border border-rose-500/30">
+              Đã xảy ra lỗi khi tải dữ liệu tra cứu. Vui lòng thử lại.
             </div>
           ) : results.length === 0 ? (
-            <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
-              <h3 className="text-lg font-bold mb-2 text-slate-900 dark:text-white">Không tìm thấy cơ hội nào phù hợp</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">
-                Hãy thử nới lỏng các tiêu chí lọc hoặc tìm kiếm bằng từ khoá rộng hơn.
-              </p>
-              <button onClick={clearAllFilters} className="px-4 py-2 bg-primary-600 text-white rounded-xl text-xs font-semibold">
+            <div className="p-16 text-center liquid-glass rounded-3xl text-slate-400 border border-white/10 space-y-3">
+              <div className="text-3xl">🔍</div>
+              <p className="font-semibold text-slate-200">Không tìm thấy cơ hội nào phù hợp</p>
+              <p className="text-xs">Hãy thử mở rộng bộ lọc hoặc tìm kiếm bằng từ khóa chung hơn.</p>
+              <button
+                onClick={clearAllFilters}
+                className="px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold shadow mt-2"
+              >
                 Xóa tất cả bộ lọc
               </button>
             </div>
           ) : (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {results.map((opp) => (
-                  <OpportunityCard
-                    key={opp.id}
-                    id={opp.id}
-                    slug={opp.slug}
-                    title={opp.title}
-                    organization={opp.organization}
-                    kind={opp.kind}
-                    deadline={opp.deadline}
-                    fundingType={FUNDING_LABELS[opp.fundingType as keyof typeof FUNDING_LABELS] || opp.fundingType}
-                    location={opp.studyLocation}
-                    fieldTags={opp.fieldCodes}
-                    lastVerifiedAt={opp.lastVerifiedAt}
-                    rawOpportunity={opp}
-                  />
-                ))}
-              </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {results.map((opp) => (
+                <OpportunityCard
+                  key={opp.id}
+                  id={opp.id}
+                  slug={opp.slug}
+                  title={opp.title}
+                  organization={opp.organization}
+                  kind={opp.kind}
+                  deadline={opp.deadline}
+                  fundingType={
+                    opp.fundingValueVnd
+                      ? `${new Intl.NumberFormat('vi-VN').format(opp.fundingValueVnd)} đ`
+                      : FUNDING_LABELS[opp.fundingType as keyof typeof FUNDING_LABELS] || opp.fundingType
+                  }
+                  location={opp.studyLocation}
+                  fieldTags={opp.fieldCodes}
+                  lastVerifiedAt={opp.lastVerifiedAt}
+                  rawOpportunity={opp}
+                />
+              ))}
+            </div>
+          )}
 
-              {/* Phân trang */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 pt-6 border-t border-slate-100 dark:border-slate-800">
-                  <button
-                    disabled={page <= 1}
-                    onClick={() => updateParam('page', String(page - 1))}
-                    className="p-2 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30"
-                  >
-                    <CaretLeft size={16} />
-                  </button>
-                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 px-3">
-                    Trang {page} / {totalPages}
-                  </span>
-                  <button
-                    disabled={page >= totalPages}
-                    onClick={() => updateParam('page', String(page + 1))}
-                    className="p-2 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30"
-                  >
-                    <CaretRight size={16} />
-                  </button>
-                </div>
-              )}
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 pt-6">
+              <button
+                onClick={() => updateParam('page', String(page - 1))}
+                disabled={page <= 1}
+                className="p-2 rounded-xl liquid-glass text-slate-300 disabled:opacity-40 hover:text-white"
+              >
+                <CaretLeft size={18} />
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => updateParam('page', String(p))}
+                  className={`w-9 h-9 rounded-xl text-xs font-bold transition-all ${
+                    p === page
+                      ? 'bg-amber-400 text-slate-950 shadow-[0_0_15px_rgba(212,175,55,0.4)]'
+                      : 'liquid-glass text-slate-300 hover:text-white'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+
+              <button
+                onClick={() => updateParam('page', String(page + 1))}
+                disabled={page >= totalPages}
+                className="p-2 rounded-xl liquid-glass text-slate-300 disabled:opacity-40 hover:text-white"
+              >
+                <CaretRight size={18} />
+              </button>
             </div>
           )}
         </main>
       </div>
-
-      {/* Mobile Filters Modal */}
-      {isMobileFiltersOpen && (
-        <div className="fixed inset-0 z-50 flex md:hidden">
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsMobileFiltersOpen(false)} />
-          <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 rounded-t-3xl p-6 max-h-[85vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="font-bold text-lg text-slate-900 dark:text-white">Bộ lọc tìm kiếm</h2>
-              <button onClick={() => setIsMobileFiltersOpen(false)} className="p-1 text-slate-400">
-                <X size={22} />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <p className="text-xs text-slate-500">Chọn các danh mục muốn lọc và bấm Áp dụng.</p>
-              <button
-                onClick={() => {
-                  clearAllFilters();
-                  setIsMobileFiltersOpen(false);
-                }}
-                className="w-full py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold"
-              >
-                Xóa tất cả bộ lọc
-              </button>
-              <button
-                className="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-bold shadow-md"
-                onClick={() => setIsMobileFiltersOpen(false)}
-              >
-                Xem {total} kết quả
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div className="h-96 w-full rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
+    <Suspense
+      fallback={
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
       <SearchContent />
     </Suspense>
   );

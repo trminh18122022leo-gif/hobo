@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { ShieldCheck, Sparkle, Globe, Clock, CheckCircle, XCircle, ArrowRight, Eye, Trash, MagnifyingGlass, ArrowsClockwise } from '@phosphor-icons/react';
 
 interface OpportunityItem {
   id: number;
@@ -144,37 +145,38 @@ export default function AdminReviewPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8">
+    <div className="min-h-screen py-8 space-y-8">
       <div className="max-w-7xl mx-auto space-y-6">
         
         {/* Top Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <div className="liquid-glass-gold p-8 rounded-3xl border border-amber-400/30 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <div className="flex items-center gap-2">
-              <Link href="/admin" className="text-sm font-semibold text-blue-600 hover:underline">
+            <div className="flex items-center gap-2 mb-2">
+              <Link href="/admin" className="text-xs font-bold text-amber-300 hover:underline">
                 ← Bảng điều khiển Admin
               </Link>
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 mt-1">
-              🛡️ Thẩm Định & Xác Thực Học Bổng
+            <h1 className="text-2xl sm:text-3xl font-extrabold font-serif text-slate-100 flex items-center gap-2.5">
+              <ShieldCheck size={28} weight="fill" className="text-amber-300" />
+              <span>Thẩm Định & Xác Thực Học Bổng</span>
             </h1>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-xs text-slate-300 mt-1 font-light">
               Kiểm tra tính chính xác, thời hạn nộp đơn, tình trạng liên kết và phê duyệt cơ hội học bổng.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2.5">
             <button
               onClick={handleTriggerCrawl}
               disabled={triggeringCrawl}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-sm font-medium shadow-sm transition-colors flex items-center gap-2"
+              className="px-4 py-2.5 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 text-slate-950 font-bold rounded-xl text-xs shadow-[0_0_20px_rgba(212,175,55,0.3)] hover:brightness-110 active:scale-95 disabled:opacity-50 transition flex items-center gap-2"
             >
               {triggeringCrawl ? '⏳ Đang quét nguồn...' : '🚀 Quét Crawler Mới'}
             </button>
             <button
               onClick={handleTriggerLinkCheck}
               disabled={triggeringLinkCheck}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-sm font-medium shadow-sm transition-colors flex items-center gap-2"
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-95 disabled:opacity-50 transition flex items-center gap-2"
             >
               {triggeringLinkCheck ? '🔍 Đang check...' : '🔗 Kiểm Tra Link Chết'}
             </button>
@@ -183,47 +185,49 @@ export default function AdminReviewPage() {
 
         {/* Alert notification */}
         {message && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-sm flex items-center justify-between">
+          <div className="p-4 bg-emerald-950/80 border border-emerald-500/40 rounded-2xl text-emerald-300 text-xs flex items-center justify-between shadow-lg">
             <span>✅ {message}</span>
-            <button onClick={() => setMessage(null)} className="text-emerald-600 font-bold">×</button>
+            <button onClick={() => setMessage(null)} className="text-emerald-400 font-bold text-sm">×</button>
           </div>
         )}
 
         {/* Stats Grid */}
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <p className="text-xs font-semibold uppercase text-slate-400">Tổng Học Bổng</p>
-              <p className="text-2xl font-bold text-slate-800 mt-1">{stats.totalCount}</p>
+            <div className="liquid-glass p-5 rounded-2xl border border-white/10 shadow-lg">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">Tổng Học Bổng</p>
+              <p className="text-3xl font-extrabold text-slate-100 mt-1 font-serif">{stats.totalCount}</p>
             </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <p className="text-xs font-semibold uppercase text-emerald-600">Đã Thẩm Định ✅</p>
-              <p className="text-2xl font-bold text-emerald-700 mt-1">{stats.verifiedCount}</p>
+            <div className="liquid-glass p-5 rounded-2xl border border-emerald-500/30 shadow-lg">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 font-mono">Đã Thẩm Định ✅</p>
+              <p className="text-3xl font-extrabold text-emerald-400 mt-1 font-serif">{stats.verifiedCount}</p>
             </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <p className="text-xs font-semibold uppercase text-amber-600">Chờ Kiểm Duyệt ⚠️</p>
-              <p className="text-2xl font-bold text-amber-700 mt-1">{stats.unverifiedCount}</p>
+            <div className="liquid-glass p-5 rounded-2xl border border-amber-500/30 shadow-lg">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-amber-300 font-mono">Chờ Kiểm Duyệt ⚠️</p>
+              <p className="text-3xl font-extrabold text-amber-300 mt-1 font-serif">{stats.unverifiedCount}</p>
             </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <p className="text-xs font-semibold uppercase text-rose-600">Link Chết / 404 ❌</p>
-              <p className="text-2xl font-bold text-rose-700 mt-1">{stats.deadLinkCount}</p>
+            <div className="liquid-glass p-5 rounded-2xl border border-rose-500/30 shadow-lg">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-rose-400 font-mono">Link Chết / 404 ❌</p>
+              <p className="text-3xl font-extrabold text-rose-400 mt-1 font-serif">{stats.deadLinkCount}</p>
             </div>
           </div>
         )}
 
         {/* Search & Filter Toolbar */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="liquid-glass p-4 rounded-2xl border border-white/10 shadow-lg flex flex-col md:flex-row items-center justify-between gap-4">
           <form onSubmit={handleSearchSubmit} className="flex-1 w-full flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="Tìm kiếm theo tên học bổng, trường, tổ chức..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="relative w-full">
+              <input
+                type="text"
+                placeholder="Tìm kiếm theo tên học bổng, trường, tổ chức..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-4 pr-10 py-2.5 liquid-glass border border-white/10 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:border-amber-400/60 outline-none"
+              />
+            </div>
             <button
               type="submit"
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-sm font-medium transition-colors"
+              className="px-4 py-2.5 bg-amber-400 text-slate-950 rounded-xl text-xs font-bold hover:brightness-110 transition"
             >
               Tìm
             </button>
@@ -233,32 +237,32 @@ export default function AdminReviewPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white text-slate-700"
+              className="px-3 py-2 liquid-glass border border-white/10 rounded-xl text-xs text-slate-200 outline-none"
             >
-              <option value="all">Trạng thái: Tất cả</option>
-              <option value="published">Đã công khai (Published)</option>
-              <option value="review">Cần xem xét (Review)</option>
-              <option value="archived">Đã lưu trữ (Archived)</option>
-              <option value="expired">Đã hết hạn (Expired)</option>
+              <option value="all" className="bg-slate-950">Trạng thái: Tất cả</option>
+              <option value="published" className="bg-slate-950">Đã công khai (Published)</option>
+              <option value="review" className="bg-slate-950">Cần xem xét (Review)</option>
+              <option value="archived" className="bg-slate-950">Đã lưu trữ (Archived)</option>
+              <option value="expired" className="bg-slate-950">Đã hết hạn (Expired)</option>
             </select>
 
             <select
               value={linkFilter}
               onChange={(e) => setLinkFilter(e.target.value)}
-              className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white text-slate-700"
+              className="px-3 py-2 liquid-glass border border-white/10 rounded-xl text-xs text-slate-200 outline-none"
             >
-              <option value="all">Link: Tất cả</option>
-              <option value="alive">Hoạt động (Alive)</option>
-              <option value="dead">Chết / Lỗi (Dead)</option>
-              <option value="unknown">Chưa check (Unknown)</option>
+              <option value="all" className="bg-slate-950">Link: Tất cả</option>
+              <option value="alive" className="bg-slate-950">Hoạt động (Alive)</option>
+              <option value="dead" className="bg-slate-950">Chết / Lỗi (Dead)</option>
+              <option value="unknown" className="bg-slate-950">Chưa check (Unknown)</option>
             </select>
 
-            <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer select-none">
+            <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={unverifiedOnly}
                 onChange={(e) => setUnverifiedOnly(e.target.checked)}
-                className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4"
+                className="rounded text-amber-400 focus:ring-amber-400 bg-slate-900 border-white/20"
               />
               <span>Chỉ chưa thẩm định</span>
             </label>
@@ -266,96 +270,96 @@ export default function AdminReviewPage() {
         </div>
 
         {/* Opportunity List Table */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="liquid-glass rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
           {loading ? (
-            <div className="p-12 text-center text-slate-500">
-              <p className="animate-pulse font-medium">Đang tải danh sách học bổng...</p>
+            <div className="p-16 text-center text-slate-400 text-xs animate-pulse">
+              Đang tải danh sách học bổng thẩm định...
             </div>
           ) : error ? (
-            <div className="p-8 text-center text-rose-600">
+            <div className="p-8 text-center text-rose-400 text-xs">
               <p>{error}</p>
             </div>
           ) : items.length === 0 ? (
-            <div className="p-12 text-center text-slate-400">
+            <div className="p-16 text-center text-slate-400 text-xs">
               <p>Không tìm thấy học bổng nào phù hợp với bộ lọc.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-sm">
+              <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
-                    <th className="py-3 px-4">Tên Học Bổng & Trường</th>
-                    <th className="py-3 px-4">Hạn Nộp</th>
-                    <th className="py-3 px-4">Độ Tin Cậy</th>
-                    <th className="py-3 px-4">Link Nguồn</th>
-                    <th className="py-3 px-4">Trạng Thái</th>
-                    <th className="py-3 px-4 text-right">Thao Tác</th>
+                  <tr className="border-b border-white/10 text-slate-400 font-mono uppercase text-[11px] bg-white/[0.02]">
+                    <th className="py-4 px-5">Tên Học Bổng & Trường</th>
+                    <th className="py-4 px-5">Hạn Nộp</th>
+                    <th className="py-4 px-5">Độ Tin Cậy</th>
+                    <th className="py-4 px-5">Link Nguồn</th>
+                    <th className="py-4 px-5">Trạng Thái</th>
+                    <th className="py-4 px-5 text-right">Thao Tác</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-white/5">
                   {items.map((opp) => (
-                    <tr key={opp.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="py-4 px-4 max-w-sm">
-                        <p className="font-semibold text-slate-900 line-clamp-1">{opp.title}</p>
-                        <p className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
+                    <tr key={opp.id} className="hover:bg-white/[0.04] transition-colors">
+                      <td className="py-4 px-5 max-w-sm">
+                        <p className="font-bold text-slate-100 line-clamp-1 text-sm">{opp.title}</p>
+                        <p className="text-[11px] text-slate-400 flex items-center gap-2 mt-1">
                           <span>🏛️ {opp.organization}</span>
                           <span>•</span>
-                          <span className="text-blue-600">{opp.fundingType}</span>
+                          <span className="text-amber-300 font-mono">{opp.fundingType}</span>
                         </p>
                         {opp.verifyNote && (
-                          <p className="text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded mt-1 inline-block">
+                          <p className="text-[10px] text-emerald-300 bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded mt-1 inline-block">
                             ✍️ {opp.verifyNote}
                           </p>
                         )}
                       </td>
 
-                      <td className="py-4 px-4 whitespace-nowrap">
+                      <td className="py-4 px-5 whitespace-nowrap font-mono">
                         {opp.deadline ? (
-                          <span className="font-medium text-slate-700">
+                          <span className="font-medium text-slate-300">
                             {new Date(opp.deadline).toLocaleDateString('vi-VN')}
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-400 italic">Thường niên / Chưa rõ</span>
+                          <span className="text-[10px] text-slate-500 italic">Thường niên</span>
                         )}
                       </td>
 
-                      <td className="py-4 px-4 whitespace-nowrap">
+                      <td className="py-4 px-5 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <div className="w-16 bg-slate-200 rounded-full h-2">
+                          <div className="w-16 bg-slate-800 rounded-full h-2 overflow-hidden">
                             <div
                               className={`h-2 rounded-full ${
                                 (opp.confidence || 0) >= 80
-                                  ? 'bg-emerald-500'
+                                  ? 'bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
                                   : (opp.confidence || 0) >= 60
-                                  ? 'bg-amber-500'
-                                  : 'bg-rose-500'
+                                  ? 'bg-amber-400 shadow-[0_0_8px_rgba(212,175,55,0.5)]'
+                                  : 'bg-rose-400'
                               }`}
                               style={{ width: `${Math.min(opp.confidence || 50, 100)}%` }}
                             />
                           </div>
-                          <span className="text-xs font-bold text-slate-700">
+                          <span className="text-xs font-bold text-slate-200 font-mono">
                             {opp.confidence || 70}%
                           </span>
                         </div>
                       </td>
 
-                      <td className="py-4 px-4 whitespace-nowrap">
+                      <td className="py-4 px-5 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <a
                             href={opp.canonicalUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-xs font-medium text-blue-600 hover:underline max-w-[120px] truncate block"
+                            className="text-xs font-medium text-sky-400 hover:underline max-w-[120px] truncate block"
                           >
                             {opp.source?.name || 'Xem gốc'} ↗
                           </a>
                           <span
-                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                            className={`text-[9px] font-black px-1.5 py-0.5 rounded font-mono ${
                               opp.linkStatus === 'alive'
-                                ? 'bg-emerald-100 text-emerald-800'
+                                ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30'
                                 : opp.linkStatus === 'dead'
-                                ? 'bg-rose-100 text-rose-800'
-                                : 'bg-slate-100 text-slate-600'
+                                ? 'bg-rose-950 text-rose-300 border border-rose-500/30'
+                                : 'bg-slate-800 text-slate-400'
                             }`}
                           >
                             {opp.linkStatus === 'alive' ? 'ALIVE' : opp.linkStatus === 'dead' ? '404 DEAD' : 'UNKNOWN'}
@@ -363,25 +367,25 @@ export default function AdminReviewPage() {
                         </div>
                       </td>
 
-                      <td className="py-4 px-4 whitespace-nowrap">
+                      <td className="py-4 px-5 whitespace-nowrap">
                         {opp.verifiedAt ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">
-                            ✓ Đã xác thực
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.25)]">
+                            ✓ Đã thẩm định
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-950/80 text-amber-300 border border-amber-500/40 shadow-[0_0_10px_rgba(212,175,55,0.25)]">
                             ⏳ Chờ duyệt
                           </span>
                         )}
                       </td>
 
-                      <td className="py-4 px-4 text-right whitespace-nowrap">
+                      <td className="py-4 px-5 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2">
                           {!opp.verifiedAt && (
                             <button
                               onClick={() => handleVerify(opp.id, 'verify')}
                               disabled={actionLoading === opp.id}
-                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold transition-colors"
+                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition shadow-sm"
                             >
                               {actionLoading === opp.id ? '...' : '✅ Duyệt'}
                             </button>
@@ -389,14 +393,14 @@ export default function AdminReviewPage() {
                           <button
                             onClick={() => handleVerify(opp.id, 'archive')}
                             disabled={actionLoading === opp.id}
-                            className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 disabled:opacity-50 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
+                            className="px-3 py-1.5 liquid-glass hover:bg-rose-950/50 hover:text-rose-300 border border-white/10 disabled:opacity-50 text-slate-300 rounded-xl text-xs font-semibold transition"
                           >
                             📦 Ẩn
                           </button>
                           <Link
                             href={`/hoc-bong/${opp.slug}`}
                             target="_blank"
-                            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold transition-colors"
+                            className="px-3 py-1.5 liquid-glass hover:border-amber-400/30 text-amber-300 rounded-xl text-xs font-semibold transition"
                           >
                             Chi tiết ↗
                           </Link>

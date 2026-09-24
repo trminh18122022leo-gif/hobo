@@ -14,8 +14,7 @@ import {
   Sparkle,
   ShieldCheck,
   ArrowRight,
-  GoogleLogo,
-  GithubLogo,
+  Crown,
 } from '@phosphor-icons/react';
 import { getGuestTrackerItems, getGuestProfile, clearGuestData, getGuestDataSummary } from '@/lib/guest-storage';
 
@@ -69,40 +68,33 @@ export default function RegisterPage() {
         } else {
           setStudentBadge(null);
         }
-      } catch {
+      } catch (err) {
         setStudentBadge(null);
       } finally {
         setCheckingDomain(false);
       }
-    }, 350);
+    }, 400);
 
     return () => clearTimeout(timer);
   }, [formData.email]);
-
-  // Password rules
-  const hasMinLength = formData.password.length >= 8;
-  const hasMixedCase = /[a-z]/.test(formData.password) && /[A-Z]/.test(formData.password);
-  const hasNumber = /\d/.test(formData.password);
-  const isPasswordValid = hasMinLength && hasMixedCase && hasNumber;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    if (!isPasswordValid) {
-      setError('Mật khẩu chưa đáp ứng đủ các tiêu chuẩn bảo mật.');
+    if (formData.password !== formData.confirmPassword) {
+      setError('Mật khẩu xác nhận không khớp');
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Mật khẩu xác nhận không khớp.');
+    if (formData.password.length < 8) {
+      setError('Mật khẩu phải chứa ít nhất 8 ký tự');
       return;
     }
 
     startTransition(async () => {
       try {
-        // Collect guest data for seamless merge (Feature D.4)
         const guestTrackerItems = getGuestTrackerItems();
         const guestProfile = getGuestProfile();
 
@@ -120,83 +112,81 @@ export default function RegisterPage() {
 
         const data = await res.json();
 
-        if (data.success) {
-          clearGuestData();
-          setSuccess(
-            data.data?.badgeLabel
-              ? `Đăng ký thành công! Đã cấp huy hiệu "${data.data.badgeLabel}" cho bạn.`
-              : 'Đăng ký tài khoản thành công!'
-          );
-          setTimeout(() => {
-            router.push('/');
-            router.refresh();
-          }, 1200);
-        } else {
-          setError(data.error || 'Đã có lỗi xảy ra khi tạo tài khoản.');
+        if (!res.ok || !data.success) {
+          setError(data.error || 'Đăng ký không thành công. Vui lòng thử lại.');
+          return;
         }
-      } catch {
-        setError('Không thể kết nối đến máy chủ. Vui lòng thử lại.');
+
+        // Clean guest data on successful merge
+        clearGuestData();
+
+        setSuccess('Đăng ký tài khoản thành công! Đang chuyển hướng...');
+        setTimeout(() => {
+          router.push('/');
+          router.refresh();
+        }, 1000);
+      } catch (err: any) {
+        setError('Đã xảy ra lỗi kết nối. Vui lòng thử lại sau.');
       }
     });
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-xl w-full bg-white dark:bg-slate-900 p-8 sm:p-10 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800"
-      >
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 mb-4">
-            <GraduationCap size={32} weight="duotone" />
-          </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Đăng ký tài khoản
-          </h1>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-            Truy cập hơn 100+ học bổng xác thực & cơ hội tuyển sinh đại học hàng đầu
-          </p>
+    <div className="w-full max-w-md mx-auto py-10 px-4">
+      {/* Brand Badge */}
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl liquid-glass-gold mb-4 border border-amber-400/40 shadow-[0_0_30px_rgba(212,175,55,0.3)]">
+          <Crown size={26} weight="fill" className="text-amber-300" />
         </div>
+        <h1 className="text-3xl font-extrabold font-serif text-slate-100 tracking-tight">
+          Đăng Ký Tài Khoản
+        </h1>
+        <p className="text-xs text-slate-400 mt-2 font-light">
+          Nhận thông báo học bổng phù hợp & mở khóa phân tích hồ sơ chuyên sâu
+        </p>
+      </div>
 
-        {/* Feature D.4: Guest Mode Merge Notification */}
+      {/* Main Glass Form Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="liquid-glass-gold rounded-3xl p-6 sm:p-8 border border-amber-400/30 shadow-[0_20px_60px_rgba(0,0,0,0.8)]"
+      >
+        {/* Guest Data Notice */}
         {guestSummary.totalItems > 0 && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="mb-6 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-start gap-3"
-          >
-            <Sparkle className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" size={20} weight="fill" />
-            <div className="text-xs text-amber-900 dark:text-amber-200">
-              <span className="font-bold">Đồng bộ dữ liệu khách:</span> Chúng tôi tìm thấy{' '}
-              <span className="font-bold underline">{guestSummary.trackerCount} học bổng</span> bạn đang theo dõi trên
-              trình duyệt này. Sau khi đăng ký, toàn bộ sẽ được lưu tự động vào tài khoản!
+          <div className="mb-6 p-3.5 rounded-2xl liquid-glass border border-amber-400/30 text-xs text-amber-200 flex items-start gap-2.5">
+            <Sparkle size={18} weight="fill" className="text-amber-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-amber-300">Tự động hợp nhất dữ liệu phiên khách</p>
+              <p className="text-slate-300 text-[11px] mt-0.5">
+                {guestSummary.trackerCount} học bổng bạn đang theo dõi sẽ được lưu tự động vào tài khoản mới.
+              </p>
             </div>
-          </motion.div>
+          </div>
         )}
 
         {error && (
-          <div className="mb-6 p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 text-red-700 dark:text-red-300 text-sm flex items-center gap-2">
-            <XCircle size={20} className="flex-shrink-0" />
+          <div className="mb-6 p-4 rounded-2xl bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2">
+            <XCircle size={18} className="flex-shrink-0 text-rose-400" />
             <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="mb-6 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-sm flex items-center gap-2">
-            <CheckCircle size={20} className="flex-shrink-0" />
+          <div className="mb-6 p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2">
+            <CheckCircle size={18} className="flex-shrink-0 text-emerald-400" />
             <span>{success}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
               Họ và tên
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <User size={18} />
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <User size={16} />
               </div>
               <input
                 type="text"
@@ -204,54 +194,44 @@ export default function RegisterPage() {
                 placeholder="Nguyễn Văn A"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/90 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
+                className="w-full pl-10 pr-4 py-3 rounded-xl liquid-glass border border-white/10 text-slate-100 placeholder-slate-500 text-sm focus:border-amber-400/60 focus:outline-none transition-all"
               />
             </div>
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
-                Email
-              </label>
-              <span className="text-xs text-primary-600 dark:text-primary-400">
-                Dùng email trường (.edu.vn) để nhận huy hiệu
-              </span>
-            </div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              Địa chỉ Email
+            </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <Envelope size={18} />
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <Envelope size={16} />
               </div>
               <input
                 type="email"
                 required
-                placeholder="tenban@hust.edu.vn hoặc gmail.com"
+                placeholder="name@hust.edu.vn hoặc name@gmail.com"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/90 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
+                className="w-full pl-10 pr-4 py-3 rounded-xl liquid-glass border border-white/10 text-slate-100 placeholder-slate-500 text-sm focus:border-amber-400/60 focus:outline-none transition-all"
               />
             </div>
 
-            {/* Feature D.1: Live Student Badge Preview */}
+            {/* Live Student Domain Badge Notification (Feature D.1) */}
             <AnimatePresence>
-              {studentBadge?.isStudent && (
+              {studentBadge && (
                 <motion.div
-                  initial={{ opacity: 0, height: 0, y: -5 }}
-                  animate={{ opacity: 1, height: 'auto', y: 0 }}
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="mt-2.5 p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-200 dark:border-blue-800/60 flex items-center gap-3 shadow-sm"
+                  className="mt-2.5 p-3 rounded-xl bg-blue-950/80 border border-sky-400/40 text-sky-200 text-xs flex items-center gap-2.5 shadow-[0_0_15px_rgba(56,189,248,0.2)]"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center flex-shrink-0 shadow">
-                    <GraduationCap size={20} weight="fill" />
-                  </div>
-                  <div className="text-xs text-blue-900 dark:text-blue-200">
-                    <div className="font-bold flex items-center gap-1.5">
-                      <span>{studentBadge.badgeLabel}</span>
-                      <ShieldCheck size={16} className="text-blue-600 dark:text-blue-400" weight="fill" />
-                    </div>
-                    <div className="text-slate-600 dark:text-slate-400 mt-0.5">
-                      Email đại học hợp lệ! Hệ thống sẽ tự động cấp huy hiệu sinh viên xác thực và ưu tiên gợi ý học bổng {studentBadge.universityName}.
-                    </div>
+                  <GraduationCap size={20} weight="fill" className="text-sky-400 flex-shrink-0" />
+                  <div>
+                    <span className="font-extrabold text-sky-300">🎓 Xác thực Sinh viên Tức thì!</span>
+                    <p className="text-[11px] text-slate-300 mt-0.5">
+                      Đã nhận diện: <strong>{studentBadge.universityName}</strong>. Huy hiệu sinh viên xác thực sẽ được cấp ngay khi kích hoạt.
+                    </p>
                   </div>
                 </motion.div>
               )}
@@ -259,59 +239,31 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
               Mật khẩu
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <Lock size={18} />
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <Lock size={16} />
               </div>
               <input
                 type="password"
                 required
-                placeholder="••••••••"
+                placeholder="Tối thiểu 8 ký tự (chữ hoa, thường, số)"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/90 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
+                className="w-full pl-10 pr-4 py-3 rounded-xl liquid-glass border border-white/10 text-slate-100 placeholder-slate-500 text-sm focus:border-amber-400/60 focus:outline-none transition-all"
               />
-            </div>
-
-            {/* Password security checklist */}
-            <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
-              <div
-                className={`flex items-center gap-1.5 ${
-                  hasMinLength ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'
-                }`}
-              >
-                <CheckCircle size={14} weight={hasMinLength ? 'fill' : 'regular'} />
-                <span>Từ 8 ký tự</span>
-              </div>
-              <div
-                className={`flex items-center gap-1.5 ${
-                  hasMixedCase ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'
-                }`}
-              >
-                <CheckCircle size={14} weight={hasMixedCase ? 'fill' : 'regular'} />
-                <span>Hoa & thường</span>
-              </div>
-              <div
-                className={`flex items-center gap-1.5 ${
-                  hasNumber ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'
-                }`}
-              >
-                <CheckCircle size={14} weight={hasNumber ? 'fill' : 'regular'} />
-                <span>Chữ số</span>
-              </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
               Xác nhận mật khẩu
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <Lock size={18} />
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <Lock size={16} />
               </div>
               <input
                 type="password"
@@ -319,44 +271,35 @@ export default function RegisterPage() {
                 placeholder="••••••••"
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/90 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
+                className="w-full pl-10 pr-4 py-3 rounded-xl liquid-glass border border-white/10 text-slate-100 placeholder-slate-500 text-sm focus:border-amber-400/60 focus:outline-none transition-all"
               />
             </div>
-          </div>
-
-          {/* Privacy & Residency choice */}
-          <div className="pt-2">
-            <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-600 dark:text-slate-400">
-              <input
-                type="checkbox"
-                defaultChecked
-                disabled
-                className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-              />
-              <span>
-                Dữ liệu cá nhân được mã hóa AES-256-GCM và lưu trữ an toàn tại máy chủ Việt Nam.
-              </span>
-            </label>
           </div>
 
           <button
             type="submit"
             disabled={isPending}
-            className="w-full py-3.5 px-4 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-lg shadow-primary-600/25 transition duration-200 flex items-center justify-center gap-2"
+            className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 text-slate-950 font-extrabold text-sm shadow-[0_0_25px_rgba(212,175,55,0.4)] hover:brightness-110 active:scale-98 disabled:opacity-50 transition-all flex items-center justify-center gap-2 mt-6"
           >
-            {isPending ? 'Đang tạo tài khoản...' : 'Hoàn tất đăng ký'}
-            {!isPending && <ArrowRight size={18} weight="bold" />}
+            {isPending ? (
+              <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <span>Tạo Tài Khoản Mới</span>
+                <ArrowRight size={16} weight="bold" />
+              </>
+            )}
           </button>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 text-center">
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+        <div className="mt-8 pt-6 border-t border-white/10 text-center">
+          <p className="text-xs text-slate-400">
             Đã có tài khoản?{' '}
             <Link
               href="/dang-nhap"
-              className="font-bold text-primary-600 hover:text-primary-700 dark:text-primary-400 hover:underline"
+              className="font-bold text-amber-300 hover:text-amber-200 transition-colors"
             >
-              Đăng nhập ngay
+              Đăng nhập ngay &rarr;
             </Link>
           </p>
         </div>

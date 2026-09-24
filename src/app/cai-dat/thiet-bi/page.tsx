@@ -16,6 +16,7 @@ import {
   CheckCircle,
   XCircle,
   SpinnerGap,
+  Lock,
 } from '@phosphor-icons/react';
 
 interface SessionItem {
@@ -72,28 +73,29 @@ export default function DeviceSettingsPage() {
         setMessage({ type: 'error', text: data.error || 'Lỗi khi thu hồi phiên' });
       }
     } catch {
-      setMessage({ type: 'error', text: 'Không thể kết nối đến máy chủ' });
+      setMessage({ type: 'error', text: 'Lỗi kết nối' });
     }
   };
 
-  const handleLogoutAll = async () => {
+  const handleRevokeAllSessions = async () => {
     if (!confirm('Bạn có chắc chắn muốn đăng xuất khỏi tất cả các thiết bị khác không?')) return;
-
     try {
       const res = await fetch('/api/auth/logout-all', { method: 'POST' });
       const data = await res.json();
       if (data.success) {
-        setMessage({ type: 'success', text: 'Đã đăng xuất toàn bộ thiết bị khác thành công.' });
+        setMessage({ type: 'success', text: 'Đã đăng xuất toàn bộ các thiết bị khác.' });
         fetchSessions();
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Lỗi khi thu hồi phiên' });
       }
     } catch {
-      setMessage({ type: 'error', text: 'Không thể đăng xuất tất cả thiết bị' });
+      setMessage({ type: 'error', text: 'Lỗi kết nối' });
     }
   };
 
   const handleSoftDeleteAccount = async () => {
-    if (deleteConfirmText.trim().toUpperCase() !== 'XOA TAI KHOAN') {
-      alert('Vui lòng nhập đúng cụm từ "XOA TAI KHOAN" để xác nhận.');
+    if (deleteConfirmText !== 'XOA TAI KHOAN') {
+      alert('Vui lòng nhập đúng cụm từ "XOA TAI KHOAN" để xác nhận');
       return;
     }
 
@@ -101,44 +103,34 @@ export default function DeviceSettingsPage() {
       setIsDeleting(true);
       const res = await fetch('/api/auth/account', { method: 'DELETE' });
       const data = await res.json();
-
       if (data.success) {
-        alert(
-          'Tài khoản đã được chuyển sang trạng thái chờ xóa. Bạn có 30 ngày ân hạn để đăng nhập lại bất kỳ lúc nào để khôi phục.'
-        );
+        alert('Tài khoản của bạn đã được chuyển sang chế độ chờ xóa trong 30 ngày. Bạn có thể đăng nhập lại bất kỳ lúc nào trong 30 ngày để kích hoạt lại tài khoản.');
         router.push('/dang-nhap');
-        router.refresh();
       } else {
-        alert(data.error || 'Lỗi khi yêu cầu xóa tài khoản');
+        alert(data.error || 'Lỗi khi xóa tài khoản');
       }
     } catch {
-      alert('Lỗi kết nối máy chủ');
+      alert('Lỗi kết nối');
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
     }
   };
 
-  const getDeviceIcon = (label: string) => {
-    const l = label.toLowerCase();
-    if (l.includes('iphone') || l.includes('android') || l.includes('mobile')) {
-      return <DeviceMobile size={24} className="text-primary-600 dark:text-primary-400" weight="duotone" />;
-    }
-    return <Desktop size={24} className="text-primary-600 dark:text-primary-400" weight="duotone" />;
-  };
-
   return (
-    <div className="max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 rounded-2xl">
-            <Devices size={28} weight="duotone" />
+      <div className="liquid-glass-gold p-8 rounded-3xl border border-amber-400/30 relative overflow-hidden shadow-2xl">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-2xl liquid-glass flex items-center justify-center border border-amber-400/40 text-amber-300">
+            <ShieldCheck size={22} weight="fill" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Thiết bị & Bảo mật phiên</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Quản lý các thiết bị đang đăng nhập tài khoản và quyền riêng tư dữ liệu
+            <h1 className="text-2xl sm:text-3xl font-extrabold font-serif text-slate-100">
+              Quản Lý Thiết Bị & Bảo Mật
+            </h1>
+            <p className="text-xs text-slate-300 font-light mt-0.5">
+              Kiểm soát các phiên làm việc đa thiết bị và chính sách an toàn tài khoản
             </p>
           </div>
         </div>
@@ -146,169 +138,147 @@ export default function DeviceSettingsPage() {
 
       {message && (
         <div
-          className={`mb-6 p-4 rounded-2xl flex items-center gap-2 text-sm ${
+          className={`p-4 rounded-2xl text-xs flex items-center gap-2 ${
             message.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200'
-              : 'bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-300 border border-red-200'
+              ? 'bg-emerald-950/60 border border-emerald-500/40 text-emerald-300'
+              : 'bg-rose-950/60 border border-rose-500/40 text-rose-300'
           }`}
         >
-          {message.type === 'success' ? <CheckCircle size={20} /> : <XCircle size={20} />}
+          {message.type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
           <span>{message.text}</span>
         </div>
       )}
 
-      {/* Feature D.2: Active Sessions List */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden mb-10">
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Active Sessions List */}
+      <div className="liquid-glass rounded-3xl p-6 sm:p-8 border border-white/10 shadow-xl space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-white/10">
           <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <span>Các phiên đăng nhập đang hoạt động</span>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary-100 text-primary-700 dark:bg-primary-950 dark:text-primary-300">
-                {sessions.length} thiết bị
-              </span>
+            <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2 font-serif">
+              <Devices size={20} className="text-amber-400" />
+              <span>Thiết Bị Đang Hoạt Động ({sessions.length})</span>
             </h2>
-            <p className="text-xs text-slate-500 mt-1">
-              Token refresh xoay vòng tự động mỗi lần sử dụng. Hệ thống tự động khóa phiên khi phát hiện tái sử dụng trái phép.
+            <p className="text-xs text-slate-400 mt-0.5 font-light">
+              Mỗi thiết bị được bảo vệ bằng cơ chế xoay vòng Refresh Token 30 ngày và IP ẩn danh.
             </p>
           </div>
 
           {sessions.length > 1 && (
             <button
-              onClick={handleLogoutAll}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 border border-red-200 dark:border-red-900/60 transition"
+              onClick={handleRevokeAllSessions}
+              className="px-4 py-2 bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-bold transition shadow-sm"
             >
-              <SignOut size={16} weight="bold" />
               Đăng xuất các thiết bị khác
             </button>
           )}
         </div>
 
-        <div className="divide-y divide-slate-100 dark:divide-slate-800">
-          {loading ? (
-            <div className="p-12 text-center text-slate-400 flex flex-col items-center gap-3">
-              <SpinnerGap size={28} className="animate-spin text-primary-600" />
-              <span>Đang tải danh sách thiết bị...</span>
-            </div>
-          ) : sessions.length === 0 ? (
-            <div className="p-12 text-center text-slate-400">Không tìm thấy phiên làm việc nào.</div>
-          ) : (
-            sessions.map((session) => (
-              <div
-                key={session.id}
-                className={`p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition ${
-                  session.isCurrent ? 'bg-primary-50/40 dark:bg-primary-950/20' : ''
-                }`}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl flex-shrink-0">
-                    {getDeviceIcon(session.deviceLabel)}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900 dark:text-white text-sm">
-                        {session.deviceLabel}
-                      </span>
-                      {session.isCurrent && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                          Phiên hiện tại
+        {loading ? (
+          <div className="p-8 text-center text-slate-400 animate-pulse text-xs">
+            Đang tải danh sách thiết bị...
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {sessions.map((s) => {
+              const isMobile = s.deviceLabel.toLowerCase().includes('phone') || s.deviceLabel.toLowerCase().includes('android');
+              return (
+                <div
+                  key={s.id}
+                  className={`p-5 rounded-2xl liquid-glass border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition ${
+                    s.isCurrent ? 'border-amber-400/40 bg-amber-400/[0.03]' : 'border-white/10'
+                  }`}
+                >
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-10 h-10 rounded-xl liquid-glass flex items-center justify-center text-amber-300 border border-white/10 flex-shrink-0">
+                      {isMobile ? <DeviceMobile size={20} /> : <Desktop size={20} />}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-sm text-slate-100">{s.deviceLabel}</span>
+                        {s.isCurrent && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950 shadow-[0_0_10px_rgba(212,175,55,0.4)]">
+                            Thiết bị này
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-slate-400 mt-1 flex-wrap font-mono">
+                        <span className="flex items-center gap-1">
+                          <MapPin size={12} className="text-slate-500" />
+                          IP: {s.ipPrefix}
                         </span>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      <span className="flex items-center gap-1">
-                        <MapPin size={14} />
-                        IP: {session.ipPrefix}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock size={14} />
-                        Hoạt động: {new Date(session.lastUsedAt).toLocaleString('vi-VN')}
-                      </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">
+                          <Clock size={12} className="text-slate-500" />
+                          Hoạt động: {new Date(s.lastUsedAt).toLocaleString('vi-VN')}
+                        </span>
+                      </div>
                     </div>
                   </div>
+
+                  {!s.isCurrent && (
+                    <button
+                      onClick={() => handleRevokeSession(s.id)}
+                      className="px-3 py-1.5 liquid-glass hover:bg-rose-950/50 hover:text-rose-300 border border-white/10 rounded-xl text-xs font-semibold text-slate-300 transition flex items-center gap-1.5"
+                    >
+                      <SignOut size={14} />
+                      <span>Thu hồi</span>
+                    </button>
+                  )}
                 </div>
-
-                {!session.isCurrent && (
-                  <button
-                    onClick={() => handleRevokeSession(session.id)}
-                    className="self-start sm:self-center px-3.5 py-1.5 rounded-lg text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 border border-slate-200 dark:border-slate-700 transition"
-                  >
-                    Thu hồi phiên
-                  </button>
-                )}
-              </div>
-            ))
-          )}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Feature D.3: Danger Zone & 30-Day Grace Period Soft Delete */}
-      <div className="bg-red-50/50 dark:bg-red-950/20 rounded-3xl border border-red-200 dark:border-red-900/60 p-6 sm:p-8">
-        <div className="flex items-start gap-4">
-          <div className="p-3 bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 rounded-2xl flex-shrink-0">
-            <WarningOctagon size={28} weight="duotone" />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-bold text-red-900 dark:text-red-300">Khu vực nhạy cảm: Xóa tài khoản</h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">
-              Khi bạn yêu cầu xóa, tài khoản sẽ được đưa vào <strong className="text-red-700 dark:text-red-300">thời gian ân hạn 30 ngày</strong>.
-              Bạn có thể đăng nhập lại bất kỳ lúc nào trong 30 ngày này để khôi phục tài khoản ngay lập tức. Sau 30 ngày, toàn bộ dữ liệu cá nhân sẽ bị xóa vĩnh viễn và không thể phục hồi.
-            </p>
-            <div className="mt-5">
-              <button
-                type="button"
-                onClick={() => setShowDeleteModal(true)}
-                className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl shadow-md transition"
-              >
-                Yêu cầu xóa tài khoản (Ân hạn 30 ngày)
-              </button>
-            </div>
-          </div>
+      {/* Danger Zone: 30-Day Grace Period Soft Delete (Feature D.3) */}
+      <div className="liquid-glass rounded-3xl p-6 sm:p-8 border border-rose-500/20 shadow-xl space-y-4">
+        <div className="flex items-center gap-2 text-rose-400">
+          <WarningOctagon size={20} weight="fill" />
+          <h2 className="text-base font-bold font-serif">Khu Vực Nguy Hiểm (Danger Zone)</h2>
         </div>
+        <p className="text-xs text-slate-400 font-light leading-relaxed">
+          Xóa tài khoản của bạn khỏi hệ thống. Tài khoản sẽ được chuyển vào chế độ <strong className="text-amber-300">ân hạn 30 ngày (Soft Delete)</strong>. Trong vòng 30 ngày, bạn có thể kích hoạt lại bất kỳ lúc nào bằng cách đăng nhập lại. Sau 30 ngày, hệ thống sẽ xóa vĩnh viễn toàn bộ dữ liệu.
+        </p>
+        <button
+          onClick={() => setShowDeleteModal(true)}
+          className="px-4 py-2.5 bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-500/40 rounded-xl text-xs font-bold transition flex items-center gap-2"
+        >
+          <Trash size={15} />
+          <span>Yêu cầu xóa tài khoản (Ân hạn 30 ngày)</span>
+        </button>
       </div>
 
-      {/* Confirmation Modal */}
+      {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800">
-            <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-900/40 text-red-600 flex items-center justify-center mx-auto mb-4">
-              <Trash size={28} weight="duotone" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white text-center">
-              Xác nhận xóa tài khoản?
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="liquid-glass rounded-3xl p-6 sm:p-8 max-w-md w-full border border-rose-500/30 space-y-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-rose-300 flex items-center gap-2 font-serif">
+              <WarningOctagon size={22} weight="fill" />
+              <span>Xác Nhận Xóa Tài Khoản</span>
             </h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400 text-center mt-2">
-              Tài khoản sẽ bị đăng xuất ngay lập tức và chuyển sang chế độ chờ xóa trong 30 ngày. Để tiếp tục, vui lòng nhập:
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Để xác nhận, vui lòng nhập chính xác cụm từ <strong className="text-amber-300 font-mono">XOA TAI KHOAN</strong> vào ô bên dưới:
             </p>
-            <p className="text-center font-mono font-bold text-red-600 my-2 select-all">
-              XOA TAI KHOAN
-            </p>
-
             <input
               type="text"
-              placeholder="Nhập XOA TAI KHOAN"
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-center font-mono text-sm uppercase focus:ring-2 focus:ring-red-500 outline-none my-4"
+              placeholder="XOA TAI KHOAN"
+              className="w-full px-4 py-3 rounded-xl liquid-glass border border-white/20 text-slate-100 font-mono text-sm focus:border-rose-400 outline-none"
             />
-
-            <div className="flex gap-3">
+            <div className="flex justify-end gap-3 pt-4">
               <button
-                type="button"
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setDeleteConfirmText('');
-                }}
-                className="flex-1 py-2.5 px-4 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 rounded-xl liquid-glass text-xs font-semibold text-slate-300 hover:text-white"
               >
                 Hủy bỏ
               </button>
               <button
-                type="button"
-                disabled={isDeleting || deleteConfirmText.trim().toUpperCase() !== 'XOA TAI KHOAN'}
                 onClick={handleSoftDeleteAccount}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-bold text-sm shadow transition"
+                disabled={deleteConfirmText !== 'XOA TAI KHOAN' || isDeleting}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition flex items-center gap-2"
               >
-                {isDeleting ? 'Đang xử lý...' : 'Xác nhận xóa'}
+                {isDeleting ? <SpinnerGap size={16} className="animate-spin" /> : 'Xác nhận xóa'}
               </button>
             </div>
           </div>
