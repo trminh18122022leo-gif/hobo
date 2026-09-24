@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import sanitize from 'sanitize-html';
 
 export const loginSchema = z.object({
   email: z.string().email('Email không đúng định dạng'),
@@ -58,11 +59,12 @@ export const profileInputSchema = z.object({
 });
 
 export function sanitizeHtml(input: string): string {
-  if (!input) return '';
-  let sanitized = input.replace(/<[^>]*>?/gm, '');
-  sanitized = sanitized.trim();
-  if (sanitized.length > 5000) {
-    sanitized = sanitized.substring(0, 5000);
-  }
-  return sanitized;
+  if (!input || typeof input !== 'string') return '';
+  const cleaned = sanitize(input, {
+    allowedTags: [],
+    allowedAttributes: {},
+    disallowedTagsMode: 'discard',
+  });
+  const trimmed = cleaned.trim();
+  return trimmed.length > 5000 ? trimmed.substring(0, 5000) : trimmed;
 }

@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 import crypto from 'crypto';
+import { isUrlSafe } from './url-validator';
 
 export interface Source {
   id: string;
@@ -55,6 +56,10 @@ export function computeHash(text: string): string {
 }
 
 export async function fetchSource(source: Source): Promise<FetchResult | null> {
+  if (!isUrlSafe(source.baseUrl)) {
+    throw new Error(`SSRF blocked: Unsafe or forbidden source URL "${source.baseUrl}"`);
+  }
+
   const headers: Record<string, string> = {
     'User-Agent': process.env.BOT_USER_AGENT || 'HocBongBot/1.0',
   };

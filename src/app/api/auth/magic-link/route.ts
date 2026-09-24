@@ -42,11 +42,13 @@ export async function POST(request: NextRequest) {
       details: { email },
     });
 
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[AUTH-DEV] Magic link token generated for ${email}: ${origin}/api/auth/magic-link/verify?token=${rawToken}`);
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Liên kết đăng nhập bảo mật đã được gửi tới email của bạn. Vui lòng kiểm tra hộp thư (hiệu lực 15 phút).',
-      // In dev mode, return the token/url for effortless instant testing
-      devPreviewUrl: process.env.NODE_ENV !== 'production' ? `${origin}/api/auth/magic-link/verify?token=${rawToken}` : undefined,
     });
   } catch (error: any) {
     console.error('Magic link request error:', error);

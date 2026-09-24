@@ -3,8 +3,18 @@ import bcryptjs from 'bcryptjs';
 import prisma from '@/lib/db';
 import { verifyAccessToken, getAuthUser as getSessionAuthUser } from '@/lib/auth/session';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-for-dev-only-min-32-chars!!';
-const secretKey = new TextEncoder().encode(JWT_SECRET);
+function getJwtSecretKey(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('FATAL: JWT_SECRET environment variable is required in production.');
+    }
+    return new TextEncoder().encode('dev-only-local-secret-do-not-use-in-prod-32ch!');
+  }
+  return new TextEncoder().encode(secret);
+}
+
+const secretKey = getJwtSecretKey();
 
 export interface AuthUser {
   id: string;
