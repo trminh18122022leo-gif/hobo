@@ -58,13 +58,19 @@ export default async function ScholarshipDetailPage({
     orderBy: { year: 'asc' },
   });
 
-  // Lấy các học bổng tương tự (Khối 11)
+  // Lấy các học bổng tương tự còn hạn (Khối 11)
+  const now = new Date();
   const similarOpps = await prisma.opportunity.findMany({
     where: {
       kind: opp.kind,
       id: { not: opp.id },
       status: 'published',
+      OR: [{ deadline: { gte: now } }, { deadline: null }],
     },
+    orderBy: [
+      { rankScore: 'desc' },
+      { deadline: 'asc' },
+    ],
     take: 4,
     select: {
       id: true,

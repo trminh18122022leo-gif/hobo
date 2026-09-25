@@ -1,6 +1,7 @@
 import MiniSearch from 'minisearch';
 import prisma from '@/lib/db';
 import { FIELD_TAXONOMY, OpportunityCard } from '@/types';
+import { syncExpiredOpportunities } from '@/lib/expiration-sync';
 
 export function removeVietnameseTones(str: string): string {
   if (!str) return '';
@@ -41,8 +42,13 @@ export async function initSearchIndex(): Promise<void> {
 
   initPromise = (async () => {
     try {
+      await syncExpiredOpportunities();
+      const now = new Date();
       const opps = await prisma.opportunity.findMany({
-        where: { status: 'published' }
+        where: {
+          status: 'published',
+          OR: [{ deadline: { gte: now } }, { deadline: null }],
+        },
       });
 
       const taxonomy: Record<string, string> = {};
@@ -179,7 +185,13 @@ export async function searchOpportunities(query: SearchQueryInput) {
       })
     : allDocuments.map((d) => ({ ...d, score: 1 }));
 
+  const nowMs = Date.now();
   let filtered = rawResults.filter((doc: any) => {
+    // Luôn loại trừ các mục đã quá hạn
+    if (doc.deadline && new Date(doc.deadline).getTime() < nowMs) {
+      return false;
+    }
+
     if (kinds.length > 0) {
       // Hỗ trợ cả lọc theo SCHOLARSHIP/ADMISSION chung hoặc loại chi tiết
       const docKind = (doc.kind || '').toLowerCase();

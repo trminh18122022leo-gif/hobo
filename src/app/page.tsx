@@ -2,20 +2,42 @@ import Link from 'next/link';
 import HomeHero from '@/components/HomeHero';
 import AcademicPrestigePortal from '@/components/portal/AcademicPrestigePortal';
 import prisma from '@/lib/db';
+import { syncExpiredOpportunities } from '@/lib/expiration-sync';
+import { getTopRecommendedOpportunities } from '@/lib/recommend/engine';
 import { KIND_LABELS, FUNDING_LABELS } from '@/types';
-import { CalendarBlank, MapPin, Bank, ArrowRight, GraduationCap, Sparkle, Clock, ShieldCheck, ArrowSquareOut } from '@phosphor-icons/react/dist/ssr';
+import {
+  CalendarBlank,
+  MapPin,
+  Bank,
+  ArrowRight,
+  GraduationCap,
+  Sparkle,
+  Clock,
+  ShieldCheck,
+  ArrowSquareOut,
+  Lightning,
+  Compass,
+} from '@phosphor-icons/react/dist/ssr';
 
 export const revalidate = 60; // Revalidate every minute
 
 async function getHomePageData() {
   try {
-    const [totalOpportunities, totalSources, urgentOpportunities, featuredScholarships] = await Promise.all([
-      prisma.opportunity.count({ where: { status: 'published' } }),
+    await syncExpiredOpportunities();
+    const now = new Date();
+
+    const [totalOpportunities, totalSources, urgentOpportunities, featuredScholarships, topRecommended] = await Promise.all([
+      prisma.opportunity.count({
+        where: {
+          status: 'published',
+          OR: [{ deadline: { gte: now } }, { deadline: null }],
+        },
+      }),
       prisma.source.count({ where: { isActive: true } }),
       prisma.opportunity.findMany({
         where: {
           status: 'published',
-          deadline: { gt: new Date() },
+          deadline: { gt: now },
         },
         orderBy: { deadline: 'asc' },
         take: 6,
@@ -24,10 +46,12 @@ async function getHomePageData() {
         where: {
           status: 'published',
           kind: { in: ['scholarship_domestic', 'scholarship_foreign', 'scholarship_corporate'] },
+          OR: [{ deadline: { gte: now } }, { deadline: null }],
         },
         orderBy: { rankScore: 'desc' },
         take: 6,
       }),
+      getTopRecommendedOpportunities(6),
     ]);
 
     return {
@@ -38,6 +62,7 @@ async function getHomePageData() {
       },
       urgentOpportunities: urgentOpportunities || [],
       featuredScholarships: featuredScholarships || [],
+      topRecommended: topRecommended || [],
     };
   } catch (error) {
     console.warn('Database query during build/render fallback:', error);
@@ -49,12 +74,13 @@ async function getHomePageData() {
       },
       urgentOpportunities: [],
       featuredScholarships: [],
+      topRecommended: [],
     };
   }
 }
 
 export default async function Home() {
-  const { stats, urgentOpportunities, featuredScholarships } = await getHomePageData();
+  const { stats, urgentOpportunities, featuredScholarships, topRecommended } = await getHomePageData();
 
   return (
     <div className="space-y-20 py-4">
@@ -63,6 +89,120 @@ export default async function Home() {
 
       {/* Academic Prestige Glass & Liquid Glass Sliding Tabs Portal */}
       <AcademicPrestigePortal />
+
+      {/* Đề Xuất Hàng Đầu — AI Algorithm Smart Picks */}
+      {topRecommended.length > 0 && (
+        <section className="relative">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8 gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/70 border border-cyan-400/40 text-cyan-300 text-xs font-bold mb-2 shadow-[0_0_15px_rgba(6,182,212,0.25)]">
+                <Lightning size={14} weight="fill" className="text-cyan-400 animate-pulse" />
+                <span>Thuật Toán Đề Xuất Thông Minh</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-100 flex items-center gap-2">
+                Cơ Hội Được Đề Xuất Hàng Đầu
+              </h2>
+              <p className="text-sm text-slate-400 mt-1">
+                Tự động ưu tiên học bổng & kỳ tuyển sinh danh giá đang trong khung thời gian vàng để hoàn thiện hồ sơ
+              </p>
+            </div>
+            <Link
+              href="/goi-y"
+              className="px-4 py-2 rounded-xl liquid-glass hover:border-cyan-400/50 text-cyan-300 text-xs font-bold flex items-center gap-1.5 transition-all group"
+            >
+              <span>Xem phân tích hồ sơ</span>
+              <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {topRecommended.map((opp) => {
+              const isScholarship = opp.kind.includes('scholarship');
+              const link = isScholarship ? `/hoc-bong/${opp.slug}` : `/tuyen-sinh/${opp.slug}`;
+              const isGolden = opp.daysUntilDeadline !== null && opp.daysUntilDeadline >= 15 && opp.daysUntilDeadline <= 60;
+
+              return (
+                <div
+                  key={opp.id}
+                  className="liquid-glass rounded-3xl p-6 border border-white/10 hover:border-cyan-400/40 hover:shadow-[0_12px_40px_rgba(0,0,0,0.7),0_0_20px_rgba(6,182,212,0.15)] transition-all group relative overflow-hidden flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-4">
+                      <span className="text-[11px] font-extrabold px-3 py-1 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-400/30">
+                        {KIND_LABELS[opp.kind as keyof typeof KIND_LABELS] || opp.kind}
+                      </span>
+                      {isGolden ? (
+                        <span className="text-xs font-black text-amber-300 bg-amber-950/80 border border-amber-400/40 px-2.5 py-1 rounded-full shadow-[0_0_12px_rgba(212,175,55,0.25)] flex items-center gap-1">
+                          <Sparkle size={12} weight="fill" />
+                          Khung vàng ({opp.daysUntilDeadline} ngày)
+                        </span>
+                      ) : opp.daysUntilDeadline !== null ? (
+                        <span className="text-xs font-semibold text-slate-300 bg-slate-800/80 border border-white/10 px-2.5 py-1 rounded-full">
+                          Còn {opp.daysUntilDeadline} ngày
+                        </span>
+                      ) : (
+                        <span className="text-xs font-semibold text-emerald-300 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-full">
+                          Tuyển liên tục
+                        </span>
+                      )}
+                    </div>
+
+                    <Link href={link} className="block">
+                      <h3 className="font-bold text-lg mb-3 text-slate-100 group-hover:text-cyan-300 transition-colors line-clamp-2 leading-snug">
+                        {opp.title}
+                      </h3>
+                    </Link>
+
+                    <div className="flex items-center text-slate-400 text-xs mb-4">
+                      <Bank size={15} className="mr-1.5 flex-shrink-0 text-cyan-400/80" />
+                      <span className="truncate font-medium">{opp.organization}</span>
+                    </div>
+
+                    {opp.summary && (
+                      <p className="text-xs text-slate-400 line-clamp-2 mb-4 leading-relaxed font-light">
+                        {opp.summary}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-white/10 text-xs">
+                    <span className="font-bold text-emerald-400">
+                      {opp.fundingValueVnd
+                        ? `${new Intl.NumberFormat('vi-VN').format(opp.fundingValueVnd)} đ`
+                        : FUNDING_LABELS[opp.fundingType as keyof typeof FUNDING_LABELS] || 'Toàn phần'}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {opp.deadline && (
+                        <span className="text-slate-400 font-mono text-[11px]">
+                          {new Date(opp.deadline).toLocaleDateString('vi-VN')}
+                        </span>
+                      )}
+                      <Link
+                        href={link}
+                        className="text-cyan-300 hover:text-cyan-200 font-semibold p-1"
+                        title="Xem chi tiết"
+                      >
+                        &rarr;
+                      </Link>
+                      {opp.canonicalUrl && (
+                        <a
+                          href={opp.canonicalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1 rounded text-slate-400 hover:text-cyan-300 transition-colors"
+                          title="Đến nguồn tuyển sinh / học bổng gốc"
+                        >
+                          <ArrowSquareOut size={14} weight="bold" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Sắp hết hạn — Urgent Section with Liquid Glass & Ruby Red Urgency */}
       <section className="relative">

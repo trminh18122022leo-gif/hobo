@@ -57,12 +57,18 @@ export default async function InternshipDetailPage({
     orderBy: { year: 'asc' },
   });
 
+  const now = new Date();
   const similarOpps = await prisma.opportunity.findMany({
     where: {
       kind: opp.kind,
       id: { not: opp.id },
       status: 'published',
+      OR: [{ deadline: { gte: now } }, { deadline: null }],
     },
+    orderBy: [
+      { rankScore: 'desc' },
+      { deadline: 'asc' },
+    ],
     take: 4,
     select: {
       id: true,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -42,21 +42,30 @@ export default function AcademicPrestigePortal() {
   const [calcEnglish, setCalcEnglish] = useState<'ielts75' | 'ielts65' | 'toefl' | 'none'>('ielts75');
   const [calcMerit, setCalcMerit] = useState(true);
 
-  // Tab 2 Countdown Timer
-  const [timeLeft, setTimeLeft] = useState({ days: 18, hours: 6, minutes: 42, seconds: 15 });
+  // Tab 2 Countdown Timer tính toán thực tế đến đợt tuyển sinh sớm 15/11/2026
+  const targetDate = useMemo(() => new Date('2026-11-15T23:59:59'), []);
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const diff = Math.max(0, targetDate.getTime() - Date.now());
+    return {
+      days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+      minutes: Math.floor((diff / 1000 / 60) % 60),
+      seconds: Math.floor((diff / 1000) % 60),
+    };
+  });
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
-        if (prev.minutes > 0) return { ...prev, minutes: 59, seconds: 59 };
-        if (prev.hours > 0) return { ...prev, hours: prev.hours - 1, minutes: 59, seconds: 59 };
-        if (prev.days > 0) return { ...prev, days: prev.days - 1, hours: 23, minutes: 59, seconds: 59 };
-        return prev;
+      const diff = Math.max(0, targetDate.getTime() - Date.now());
+      setTimeLeft({
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((diff / 1000 / 60) % 60),
+        seconds: Math.floor((diff / 1000) % 60),
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [targetDate]);
 
   // Tab 3 Majors Roster Search & Category
   const [majorSearch, setMajorSearch] = useState('');
@@ -609,7 +618,7 @@ export default function AcademicPrestigePortal() {
                   </div>
                   <h3 className="text-2xl sm:text-3xl font-black text-slate-100 leading-tight">
                     TUYỂN SINH ĐẠI HỌC CHÍNH QUY <br />
-                    <span className="text-sapphire-gradient">NIÊN KHÓA 2025 &minus; 2026</span>
+                    <span className="text-sapphire-gradient">NIÊN KHÓA 2026 &minus; 2027</span>
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-300 mt-2 max-w-xl">
                     Chương trình đào tạo chuẩn quốc tế, giảng dạy song ngữ với cơ sở vật chất chuẩn phòng Lab nghiên cứu và cơ hội việc làm toàn cầu.
@@ -643,7 +652,7 @@ export default function AcademicPrestigePortal() {
                       <span className="block text-[9px] text-slate-400 uppercase">Giây</span>
                     </div>
                   </div>
-                  <span className="text-[10px] text-slate-400 mt-2">Hạn chót: 30 Tháng 06, 2025</span>
+                  <span className="text-[10px] text-slate-400 mt-2">Hạn chót: 15 Tháng 11, 2026</span>
                 </div>
               </div>
             </div>

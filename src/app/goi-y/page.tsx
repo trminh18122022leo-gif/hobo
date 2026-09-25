@@ -171,7 +171,7 @@ export default function RecommendationPage() {
           }`}
         >
           <RocketLaunch size={16} />
-          <span>Thử sức ({portfolio?.reach.length || 0})</span>
+          <span>Thử sức ({recommendations.filter((r) => r.category === 'reach').length})</span>
         </button>
         <button
           onClick={() => setActiveTab('match')}
@@ -182,7 +182,7 @@ export default function RecommendationPage() {
           }`}
         >
           <Target size={16} />
-          <span>Phù hợp ({portfolio?.match.length || 0})</span>
+          <span>Phù hợp ({recommendations.filter((r) => r.category === 'match').length})</span>
         </button>
         <button
           onClick={() => setActiveTab('safety')}
@@ -193,7 +193,7 @@ export default function RecommendationPage() {
           }`}
         >
           <ShieldCheck size={16} />
-          <span>Chắc chắn ({portfolio?.safety.length || 0})</span>
+          <span>Chắc chắn ({recommendations.filter((r) => r.category === 'safety').length})</span>
         </button>
       </div>
 

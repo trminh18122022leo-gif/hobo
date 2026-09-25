@@ -58,13 +58,19 @@ export default async function AdmissionDetailPage({
     orderBy: { year: 'asc' },
   });
 
-  // Chương trình tuyển sinh tương tự
+  // Chương trình tuyển sinh tương tự còn hạn
+  const now = new Date();
   const similarOpps = await prisma.opportunity.findMany({
     where: {
       kind: opp.kind,
       id: { not: opp.id },
       status: 'published',
+      OR: [{ deadline: { gte: now } }, { deadline: null }],
     },
+    orderBy: [
+      { rankScore: 'desc' },
+      { deadline: 'asc' },
+    ],
     take: 4,
     select: {
       id: true,
