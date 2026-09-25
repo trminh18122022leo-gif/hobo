@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
   OpportunityDetail,
@@ -29,13 +29,21 @@ import {
   WarningCircle,
   ShareNetwork,
   ShieldCheck,
+  Calculator,
+  Gauge,
+  TrendUp,
+  SlidersHorizontal,
+  CheckSquare,
+  Square,
+  Lightning,
 } from '@phosphor-icons/react';
 import { useCompare } from '@/context/CompareContext';
 import { generatePrepRoadmap } from '@/lib/roadmap';
-import { generateOpportunityIcs, downloadIcsFile } from '@/lib/calendar';
+import { generateOpportunityIcs, downloadIcsFile, getGoogleCalendarUrl } from '@/lib/calendar';
 import BenchmarkChart from '@/components/BenchmarkChart';
 import VersionDiffViewer from '@/components/VersionDiffViewer';
 import EssayReviewModal from '@/components/EssayReviewModal';
+import NetPriceCalculatorModal from '@/components/NetPriceCalculatorModal';
 
 interface OpportunityDetailViewProps {
   opportunity: OpportunityDetail;
@@ -54,6 +62,34 @@ export default function OpportunityDetailView({
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [isEssayModalOpen, setIsEssayModalOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [isNetPriceModalOpen, setIsNetPriceModalOpen] = useState(false);
+  const [checkedDocs, setCheckedDocs] = useState<Record<number, boolean>>({});
+
+  // Đánh giá Xác suất Trúng tuyển (Niche & Fastweb benchmark)
+  const [userGpa, setUserGpa] = useState<number>(3.5);
+  const [userIelts, setUserIelts] = useState<number>(6.5);
+  const [userSopReady, setUserSopReady] = useState<'not_started' | 'drafting' | 'ready'>('drafting');
+  const [hasExtracurriculars, setHasExtracurriculars] = useState<boolean>(true);
+
+  // Khôi phục checklist từ localStorage (DAAD & PhDPortal benchmark)
+  useEffect(() => {
+    try {
+      const savedDocs = localStorage.getItem(`opp_checklist_${opportunity.id}`);
+      if (savedDocs) {
+        setCheckedDocs(JSON.parse(savedDocs));
+      }
+    } catch {}
+  }, [opportunity.id]);
+
+  const toggleDocCheck = (idx: number) => {
+    setCheckedDocs((prev) => {
+      const next = { ...prev, [idx]: !prev[idx] };
+      try {
+        localStorage.setItem(`opp_checklist_${opportunity.id}`, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
 
   useEffect(() => {
     // Lấy profile người dùng để so khớp điều kiện
@@ -62,6 +98,7 @@ export default function OpportunityDetailView({
       .then((data) => {
         if (data.success && data.data) {
           setUserProfile(data.data);
+          if (data.data.gpa) setUserGpa(Number(data.data.gpa));
         }
       })
       .catch(() => {});
@@ -90,6 +127,9 @@ export default function OpportunityDetailView({
   const isStale =
     opportunity.lastVerifiedAt &&
     Date.now() - new Date(opportunity.lastVerifiedAt).getTime() > 48 * 60 * 60 * 1000;
+
+  // 1-Click Google Calendar URL (Common App & UCAS benchmark)
+  const googleCalendarUrl = getGoogleCalendarUrl(opportunity);
 
   // Xử lý Thêm vào Kanban Tracker (B.6)
   const handleToggleTrack = async () => {
@@ -125,9 +165,65 @@ export default function OpportunityDetailView({
 
   // So khớp điều kiện với Profile người dùng
   const reqObj: any = opportunity.requirements || {};
-  const gpaMin = reqObj.gpa_min || reqObj.gpa || null;
-  const hasGpaCheck = gpaMin && userProfile?.gpa;
-  const isGpaMet = hasGpaCheck ? userProfile.gpa! >= gpaMin : null;
+  const gpaMin = Number(reqObj.gpa_min || reqObj.gpa) || 3.0;
+  const hasGpaCheck = reqObj.gpa_min || reqObj.gpa;
+  const isGpaMet = hasGpaCheck && userProfile?.gpa ? userProfile.gpa >= gpaMin : null;
+
+  // Đánh giá Xác suất Trúng tuyển & Độ tương thích (Smart Match Calculation)
+  const matchCalculation = useMemo(() => {
+    let score = 50;
+
+    // 1. Yếu tố GPA (+25% / -25%)
+    const gpaDiff = userGpa - gpaMin;
+    if (gpaDiff >= 0.5) score += 25;
+    else if (gpaDiff >= 0.2) score += 18;
+    else if (gpaDiff >= 0) score += 10;
+    else if (gpaDiff >= -0.3) score -= 12;
+    else score -= 25;
+
+    // 2. Yếu tố Ngoại ngữ (+20% / -15%)
+    const isForeign =
+      opportunity.kind === 'scholarship_foreign' ||
+      (opportunity.studyLocation && !opportunity.studyLocation.includes('Việt Nam'));
+    if (isForeign) {
+      if (userIelts >= 8.0) score += 20;
+      else if (userIelts >= 7.0) score += 15;
+      else if (userIelts >= 6.5) score += 8;
+      else score -= 15;
+    } else {
+      if (userIelts >= 7.0) score += 10;
+      else score += 5;
+    }
+
+    // 3. Yếu tố Bài luận SOP (+15% / -10%)
+    if (userSopReady === 'ready') score += 15;
+    else if (userSopReady === 'drafting') score += 5;
+    else score -= 10;
+
+    // 4. Hoạt động ngoại khóa / NCKH (+10%)
+    if (hasExtracurriculars) score += 10;
+
+    const finalScore = Math.min(98, Math.max(20, score));
+
+    let tier: 'safe' | 'target' | 'reach' = 'target';
+    let tierLabel = 'Vừa sức (Target Match)';
+    let tierColor = 'text-amber-400 bg-amber-400/10 border-amber-400/30';
+    let advice = 'Hồ sơ của bạn khá cạnh tranh. Hãy hoàn thiện bài luận SOP sớm và bổ sung thư giới thiệu để bứt phá.';
+
+    if (finalScore >= 82) {
+      tier = 'safe';
+      tierLabel = 'An toàn (Safe Match) - Tỷ lệ trúng tuyển rất cao';
+      tierColor = 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30';
+      advice = 'Bạn vượt trội so với yêu cầu chuẩn của chương trình! Hãy nộp hồ sơ sớm để được ưu tiên xét duyệt mức tài trợ cao nhất.';
+    } else if (finalScore < 60) {
+      tier = 'reach';
+      tierLabel = 'Thử thách (Reach Match) - Cạnh tranh cao';
+      tierColor = 'text-rose-400 bg-rose-400/10 border-rose-400/30';
+      advice = 'Chương trình có tính cạnh tranh lớn. Bạn nên cải thiện thêm điểm GPA/IELTS hoặc đầu tư bài luận mang dấu ấn cá nhân.';
+    }
+
+    return { score: finalScore, tier, tierLabel, tierColor, advice };
+  }, [userGpa, gpaMin, userIelts, userSopReady, hasExtracurriculars, opportunity.kind, opportunity.studyLocation]);
 
   return (
     <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
@@ -267,11 +363,35 @@ export default function OpportunityDetailView({
               <span>Góp ý bài luận AI</span>
             </button>
 
+            {/* Nút Dự toán Chi phí & Thực chi Net Price (ISC Education & IDP benchmark) */}
+            <button
+              onClick={() => setIsNetPriceModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-400/40 text-amber-600 dark:text-amber-300 rounded-xl font-bold text-sm shadow-[0_0_15px_rgba(212,175,55,0.2)] transition active:scale-95"
+              title="Dự toán tổng chi phí và số tiền thực chi ròng sau học bổng & đi làm thêm"
+            >
+              <Calculator size={18} weight="bold" />
+              <span>Dự toán Chi phí & Thực chi</span>
+            </button>
+
+            {/* Nút Thêm vào Google Calendar 1-Click (Common App & UCAS benchmark) */}
+            {googleCalendarUrl && (
+              <a
+                href={googleCalendarUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-4 py-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-xl font-semibold text-sm transition"
+                title="Đồng bộ hạn chót vào Google Calendar với chuông nhắc tự động"
+              >
+                <CalendarBlank size={18} weight="bold" />
+                <span>+ Google Calendar</span>
+              </a>
+            )}
+
             {/* Nút Xuất lịch .ics (B.7) */}
             <button
               onClick={handleExportIcs}
               className="inline-flex items-center gap-1.5 px-4 py-3 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-semibold text-sm transition"
-              title="Thêm vào Google Calendar / Apple Calendar"
+              title="Tải file .ics cho Apple Calendar / Outlook"
             >
               <DownloadSimple size={18} />
               <span>Xuất lịch .ics</span>
@@ -387,43 +507,237 @@ export default function OpportunityDetailView({
       </section>
 
       {/* ════════════════════════════════════════════════════════════
-          KHỐI 04: HỒ SƠ CẦN CHUẨN BỊ (REQUIRED DOCUMENTS)
+          KHỐI 03.5: ĐÁNH GIÁ XÁC SUẤT TRÚNG TUYỂN & ĐỘ TƯƠNG THÍCH (TÍNH NĂNG NICHE & FASTWEB)
       ════════════════════════════════════════════════════════════ */}
-      {opportunity.requiredDocuments && opportunity.requiredDocuments.length > 0 && (
-        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-sm">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-            <FileText size={22} className="text-primary-600" />
-            Hồ sơ & Giấy tờ cần chuẩn bị
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {opportunity.requiredDocuments.map((doc, idx) => (
-              <div
-                key={idx}
-                className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col justify-between"
-              >
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-950 text-primary-700 dark:text-primary-300 text-xs flex items-center justify-center font-bold">
-                      {idx + 1}
-                    </span>
-                    {doc.name}
-                  </h4>
-                  {doc.format_hint && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
-                      <strong>Định dạng yêu cầu:</strong> {doc.format_hint}
-                    </p>
-                  )}
-                </div>
-                {doc.evidence_quote && (
-                  <p className="text-[11px] text-slate-400 italic mt-3 border-t border-slate-200/60 dark:border-slate-700/60 pt-2">
-                    &quot;{doc.evidence_quote}&quot;
-                  </p>
-                )}
-              </div>
-            ))}
+      <section className="bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950 text-white rounded-2xl p-6 sm:p-8 shadow-xl border border-indigo-500/20 relative overflow-hidden">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-white/10">
+          <div>
+            <div className="flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-wider mb-1">
+              <Sparkle size={16} weight="fill" />
+              <span>Công cụ Độc quyền • Chuẩn Niche & Fastweb Global</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+              <Gauge size={26} className="text-amber-400" />
+              <span>Đo Lường Xác Suất Trúng Tuyển Hồ Sơ</span>
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 mt-1">
+              Điều chỉnh thông số cá nhân để hệ thống dự đoán tỷ lệ cạnh tranh và mức độ tương thích của bạn với chương trình.
+            </p>
           </div>
-        </section>
-      )}
+
+          {/* Badge Điểm số & Phân loại */}
+          <div className="flex items-center gap-4 bg-white/5 border border-white/10 p-3.5 rounded-2xl">
+            <div className="text-center">
+              <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">Độ Tương Thích</span>
+              <span className="text-3xl font-black text-amber-300 font-mono">
+                {matchCalculation.score}%
+              </span>
+            </div>
+            <div className="h-10 w-[1px] bg-white/10" />
+            <div>
+              <span className={`text-xs font-extrabold px-3 py-1 rounded-full border inline-block ${matchCalculation.tierColor}`}>
+                {matchCalculation.tierLabel}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Thanh trượt điều chỉnh chỉ số */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+          {/* Slider 1: GPA */}
+          <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <GraduationCap size={16} className="text-amber-400" />
+                <span>Điểm GPA của bạn:</span>
+              </label>
+              <span className="text-sm font-black text-amber-300 font-mono">{userGpa.toFixed(1)} / 4.0</span>
+            </div>
+            <input
+              type="range"
+              min="2.0"
+              max="4.0"
+              step="0.1"
+              value={userGpa}
+              onChange={(e) => setUserGpa(parseFloat(e.target.value))}
+              className="w-full accent-amber-400 cursor-pointer"
+            />
+            <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+              <span>2.0 (TB)</span>
+              <span>3.2 (Khá)</span>
+              <span>3.6 (Giỏi)</span>
+              <span>4.0 (Xuất sắc)</span>
+            </div>
+          </div>
+
+          {/* Slider 2: IELTS / Tiếng Anh */}
+          <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <SlidersHorizontal size={16} className="text-amber-400" />
+                <span>Chứng chỉ IELTS:</span>
+              </label>
+              <span className="text-sm font-black text-amber-300 font-mono">{userIelts.toFixed(1)}</span>
+            </div>
+            <input
+              type="range"
+              min="5.0"
+              max="9.0"
+              step="0.5"
+              value={userIelts}
+              onChange={(e) => setUserIelts(parseFloat(e.target.value))}
+              className="w-full accent-amber-400 cursor-pointer"
+            />
+            <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+              <span>5.0</span>
+              <span>6.5 (Chuẩn)</span>
+              <span>7.5 (Cao)</span>
+              <span>9.0</span>
+            </div>
+          </div>
+
+          {/* Selector 3: SOP / Bài luận */}
+          <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+            <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5 mb-2">
+              <FileText size={16} className="text-amber-400" />
+              <span>Tiến độ Bài luận (SOP):</span>
+            </label>
+            <div className="grid grid-cols-3 gap-1.5 text-xs">
+              {[
+                { id: 'not_started', label: 'Chưa viết' },
+                { id: 'drafting', label: 'Bản nháp' },
+                { id: 'ready', label: 'Hoàn thiện' },
+              ].map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setUserSopReady(s.id as any)}
+                  className={`py-2 px-1 rounded-lg text-center font-bold text-[11px] transition ${
+                    userSopReady === s.id
+                      ? 'bg-amber-400 text-slate-950 shadow-md'
+                      : 'bg-white/10 text-slate-300 hover:bg-white/20'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 flex items-center justify-between text-[11px] text-slate-300">
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hasExtracurriculars}
+                  onChange={(e) => setHasExtracurriculars(e.target.checked)}
+                  className="rounded text-amber-400 bg-slate-900 border-white/20"
+                />
+                <span>Có hoạt động NCKH / Ngoại khóa</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Lời khuyên chiến lược trúng tuyển */}
+        <div className="mt-6 p-4 rounded-xl bg-amber-400/10 border border-amber-400/30 flex items-start gap-3">
+          <TrendUp size={20} className="text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="text-xs sm:text-sm text-slate-200">
+            <span className="font-bold text-amber-300">Chiến lược tối ưu hồ sơ: </span>
+            <span>{matchCalculation.advice}</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════
+          KHỐI 04: HỒ SƠ CẦN CHUẨN BỊ (INTERACTIVE CHECKLIST - DAAD & PHD PORTAL)
+      ════════════════════════════════════════════════════════════ */}
+      {opportunity.requiredDocuments && opportunity.requiredDocuments.length > 0 && (() => {
+        const totalDocs = opportunity.requiredDocuments.length;
+        const completedDocs = opportunity.requiredDocuments.filter((_, idx) => checkedDocs[idx]).length;
+        const progressPct = Math.round((completedDocs / totalDocs) * 100);
+
+        return (
+          <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <FileText size={22} className="text-primary-600" />
+                  <span>Danh mục Hồ sơ & Tiến độ Chuẩn bị</span>
+                </h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Tích chọn các giấy tờ bạn đã hoàn tất để theo dõi mức độ sẵn sàng nộp đơn (Tự động lưu vào trình duyệt).
+                </p>
+              </div>
+
+              {/* Thanh tiến độ */}
+              <div className="flex items-center gap-3 sm:self-center">
+                <div className="text-right">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Đã chuẩn bị: <strong className="text-primary-600 dark:text-primary-400">{completedDocs}/{totalDocs}</strong>
+                  </span>
+                  <span className="text-[11px] text-slate-400 block font-mono">({progressPct}% hoàn thành)</span>
+                </div>
+                <div className="w-24 h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-300"
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {opportunity.requiredDocuments.map((doc, idx) => {
+                const isChecked = Boolean(checkedDocs[idx]);
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => toggleDocCheck(idx)}
+                    className={`p-4 rounded-xl border transition-all cursor-pointer select-none flex flex-col justify-between ${
+                      isChecked
+                        ? 'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800 shadow-sm'
+                        : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-primary-400'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <span className={`w-5 h-5 rounded-full text-xs flex items-center justify-center font-bold ${
+                            isChecked
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-primary-100 dark:bg-primary-950 text-primary-700 dark:text-primary-300'
+                          }`}>
+                            {idx + 1}
+                          </span>
+                          <span className={isChecked ? 'line-through text-slate-500 dark:text-slate-400' : ''}>
+                            {doc.name}
+                          </span>
+                        </h4>
+                        <div className="text-primary-600 dark:text-primary-400">
+                          {isChecked ? (
+                            <CheckSquare size={20} weight="fill" className="text-emerald-600 dark:text-emerald-400" />
+                          ) : (
+                            <Square size={20} className="text-slate-400" />
+                          )}
+                        </div>
+                      </div>
+
+                      {doc.format_hint && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
+                          <strong>Định dạng yêu cầu:</strong> {doc.format_hint}
+                        </p>
+                      )}
+                    </div>
+                    {doc.evidence_quote && (
+                      <p className="text-[11px] text-slate-400 italic mt-3 border-t border-slate-200/60 dark:border-slate-700/60 pt-2">
+                        &quot;{doc.evidence_quote}&quot;
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })()}
 
       {/* ════════════════════════════════════════════════════════════
           KHỐI 05: QUYỀN LỢI CHI TIẾT (BENEFITS TABLE)
@@ -702,6 +1016,13 @@ export default function OpportunityDetailView({
         onClose={() => setIsEssayModalOpen(false)}
         opportunityId={opportunity.id}
         opportunityTitle={opportunity.title}
+      />
+
+      {/* Modal Dự toán Chi phí & Thực chi Net Price (ISC Education & IDP benchmark) */}
+      <NetPriceCalculatorModal
+        isOpen={isNetPriceModalOpen}
+        onClose={() => setIsNetPriceModalOpen(false)}
+        opportunity={opportunity}
       />
     </div>
   );

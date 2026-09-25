@@ -33,6 +33,8 @@ function SearchContent() {
   const currentKinds = searchParams.getAll('kind');
   const currentFunding = searchParams.getAll('fundingType');
   const currentDegree = searchParams.getAll('degreeLevel');
+  const currentCombos = searchParams.getAll('subjectCombinations');
+  const currentMethods = searchParams.getAll('admissionMethods');
   const currentLocation = searchParams.get('studyLocation') || '';
   const currentSort = searchParams.get('sort') || 'relevance';
 
@@ -97,6 +99,8 @@ function SearchContent() {
     currentKinds.length > 0 ||
     currentFunding.length > 0 ||
     currentDegree.length > 0 ||
+    currentCombos.length > 0 ||
+    currentMethods.length > 0 ||
     Boolean(currentLocation) ||
     Boolean(searchParams.get('q'));
 
@@ -145,6 +149,76 @@ function SearchContent() {
             }`}
           >
             Tất cả
+          </button>
+          <button
+            onClick={() => {
+              const p = new URLSearchParams();
+              p.append('subjectCombinations', 'A00');
+              router.push(`/tim-kiem?${p.toString()}`);
+            }}
+            className={`px-3 py-1.5 rounded-full transition-all flex items-center gap-1 ${
+              currentCombos.includes('A00')
+                ? 'bg-amber-400 text-slate-950 font-bold shadow-md'
+                : 'liquid-glass hover:border-amber-400/50 text-amber-200'
+            }`}
+          >
+            <span>📐 Khối A00 (Toán-Lý-Hóa)</span>
+          </button>
+          <button
+            onClick={() => {
+              const p = new URLSearchParams();
+              p.append('subjectCombinations', 'A01');
+              router.push(`/tim-kiem?${p.toString()}`);
+            }}
+            className={`px-3 py-1.5 rounded-full transition-all flex items-center gap-1 ${
+              currentCombos.includes('A01')
+                ? 'bg-amber-400 text-slate-950 font-bold shadow-md'
+                : 'liquid-glass hover:border-amber-400/50 text-amber-200'
+            }`}
+          >
+            <span>💻 Khối A01 (Toán-Lý-Anh)</span>
+          </button>
+          <button
+            onClick={() => {
+              const p = new URLSearchParams();
+              p.append('subjectCombinations', 'D01');
+              router.push(`/tim-kiem?${p.toString()}`);
+            }}
+            className={`px-3 py-1.5 rounded-full transition-all flex items-center gap-1 ${
+              currentCombos.includes('D01')
+                ? 'bg-amber-400 text-slate-950 font-bold shadow-md'
+                : 'liquid-glass hover:border-amber-400/50 text-amber-200'
+            }`}
+          >
+            <span>📚 Khối D01 (Toán-Văn-Anh)</span>
+          </button>
+          <button
+            onClick={() => {
+              const p = new URLSearchParams();
+              p.append('admissionMethods', 'dgnl');
+              router.push(`/tim-kiem?${p.toString()}`);
+            }}
+            className={`px-3 py-1.5 rounded-full transition-all flex items-center gap-1 ${
+              currentMethods.includes('dgnl')
+                ? 'bg-indigo-400 text-slate-950 font-bold shadow-md'
+                : 'liquid-glass hover:border-indigo-400/50 text-indigo-300'
+            }`}
+          >
+            <span>🎯 Đánh Giá Năng Lực (ĐGNL)</span>
+          </button>
+          <button
+            onClick={() => {
+              const p = new URLSearchParams();
+              p.append('admissionMethods', 'dgtd');
+              router.push(`/tim-kiem?${p.toString()}`);
+            }}
+            className={`px-3 py-1.5 rounded-full transition-all flex items-center gap-1 ${
+              currentMethods.includes('dgtd')
+                ? 'bg-rose-400 text-slate-950 font-bold shadow-md'
+                : 'liquid-glass hover:border-rose-400/50 text-rose-300'
+            }`}
+          >
+            <span>🧠 Đánh Giá Tư Duy (ĐGTD)</span>
           </button>
           <button
             onClick={() => {
@@ -265,6 +339,68 @@ function SearchContent() {
                   </div>
                   <span className="text-[10px] text-slate-500 font-mono">
                     ({facets.kind?.[k.id] || 0})
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Filter by Subject Combinations (Tổ hợp môn xét tuyển) */}
+          <div className="border-t border-white/10 pt-4">
+            <h3 className="font-mono text-xs font-bold text-amber-200 uppercase tracking-wider mb-3">
+              Tổ Hợp Môn THPT
+            </h3>
+            <div className="space-y-2.5 text-xs">
+              {[
+                { id: 'A00', label: 'Khối A00 (Toán, Lý, Hóa)' },
+                { id: 'A01', label: 'Khối A01 (Toán, Lý, Anh)' },
+                { id: 'B00', label: 'Khối B00 (Toán, Hóa, Sinh)' },
+                { id: 'C00', label: 'Khối C00 (Văn, Sử, Địa)' },
+                { id: 'D01', label: 'Khối D01 (Toán, Văn, Anh)' },
+                { id: 'D07', label: 'Khối D07 (Toán, Hóa, Anh)' },
+              ].map((c) => (
+                <label key={c.id} className="flex items-center justify-between cursor-pointer text-slate-300 hover:text-white transition">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={currentCombos.includes(c.id)}
+                      onChange={() => updateParam('subjectCombinations', c.id, true)}
+                      className="rounded text-amber-400 focus:ring-amber-400 bg-slate-900 border-white/20"
+                    />
+                    <span>{c.label}</span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    ({facets.subjectCombinations?.[c.id] || 0})
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Filter by Admission Methods (Phương thức tuyển sinh) */}
+          <div className="border-t border-white/10 pt-4">
+            <h3 className="font-mono text-xs font-bold text-amber-200 uppercase tracking-wider mb-3">
+              Phương Thức Xét Tuyển
+            </h3>
+            <div className="space-y-2.5 text-xs">
+              {[
+                { id: 'dgnl', label: 'Đánh giá năng lực (ĐGNL)' },
+                { id: 'dgtd', label: 'Đánh giá tư duy (ĐGTD)' },
+                { id: 'hoc_ba', label: 'Xét tuyển Học bạ THPT' },
+                { id: 'tuyen_thang', label: 'Tuyển thẳng / SAT / IELTS' },
+              ].map((m) => (
+                <label key={m.id} className="flex items-center justify-between cursor-pointer text-slate-300 hover:text-white transition">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={currentMethods.includes(m.id)}
+                      onChange={() => updateParam('admissionMethods', m.id, true)}
+                      className="rounded text-amber-400 focus:ring-amber-400 bg-slate-900 border-white/20"
+                    />
+                    <span>{m.label}</span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    ({facets.admissionMethods?.[m.id] || 0})
                   </span>
                 </label>
               ))}
@@ -532,6 +668,62 @@ function SearchContent() {
                         className="rounded text-amber-400 focus:ring-amber-400 bg-slate-900 border-white/20"
                       />
                       <span>{k.label}</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Filter by Subject Combinations (Mobile) */}
+            <div>
+              <h3 className="font-mono text-xs font-bold text-amber-200 uppercase tracking-wider mb-3">
+                Tổ Hợp Môn THPT
+              </h3>
+              <div className="space-y-2.5 text-xs">
+                {[
+                  { id: 'A00', label: 'Khối A00 (Toán, Lý, Hóa)' },
+                  { id: 'A01', label: 'Khối A01 (Toán, Lý, Anh)' },
+                  { id: 'B00', label: 'Khối B00 (Toán, Hóa, Sinh)' },
+                  { id: 'C00', label: 'Khối C00 (Văn, Sử, Địa)' },
+                  { id: 'D01', label: 'Khối D01 (Toán, Văn, Anh)' },
+                  { id: 'D07', label: 'Khối D07 (Toán, Hóa, Anh)' },
+                ].map((c) => (
+                  <label key={c.id} className="flex items-center justify-between cursor-pointer text-slate-300">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={currentCombos.includes(c.id)}
+                        onChange={() => updateParam('subjectCombinations', c.id, true)}
+                        className="rounded text-amber-400 focus:ring-amber-400 bg-slate-900 border-white/20"
+                      />
+                      <span>{c.label}</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Filter by Admission Methods (Mobile) */}
+            <div>
+              <h3 className="font-mono text-xs font-bold text-amber-200 uppercase tracking-wider mb-3">
+                Phương Thức Xét Tuyển
+              </h3>
+              <div className="space-y-2.5 text-xs">
+                {[
+                  { id: 'dgnl', label: 'Đánh giá năng lực (ĐGNL)' },
+                  { id: 'dgtd', label: 'Đánh giá tư duy (ĐGTD)' },
+                  { id: 'hoc_ba', label: 'Xét tuyển Học bạ THPT' },
+                  { id: 'tuyen_thang', label: 'Tuyển thẳng / SAT / IELTS' },
+                ].map((m) => (
+                  <label key={m.id} className="flex items-center justify-between cursor-pointer text-slate-300">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={currentMethods.includes(m.id)}
+                        onChange={() => updateParam('admissionMethods', m.id, true)}
+                        className="rounded text-amber-400 focus:ring-amber-400 bg-slate-900 border-white/20"
+                      />
+                      <span>{m.label}</span>
                     </div>
                   </label>
                 ))}

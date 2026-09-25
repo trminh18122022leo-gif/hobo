@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
-import { CalendarBlank, MapPin, Bank, WarningCircle, Scales, Sparkle, Clock, ArrowSquareOut, Lightning } from '@phosphor-icons/react';
+import { CalendarBlank, MapPin, Bank, WarningCircle, Scales, Sparkle, Clock, ArrowSquareOut, Lightning, Calculator } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useCompare } from '@/context/CompareContext';
 import { OpportunityCard as OppCardType } from '@/types';
+import { getGoogleCalendarUrl } from '@/lib/calendar';
 
 interface OpportunityCardProps {
   id: string | number;
@@ -276,6 +277,30 @@ export default function OpportunityCard({
             </div>
           )}
 
+          {/* Tổ hợp môn xét tuyển & Phương thức (Tuyển Sinh Số & MOET benchmark) */}
+          {rawOpportunity?.subjectCombinations && rawOpportunity.subjectCombinations.length > 0 && (
+            <div className="flex items-center gap-1 flex-wrap pt-2.5">
+              {rawOpportunity.subjectCombinations.slice(0, 4).map((c: string) => (
+                <span
+                  key={c}
+                  className="text-[9px] font-mono font-bold bg-amber-400/10 text-amber-300 border border-amber-400/30 px-1.5 py-0.5 rounded"
+                >
+                  {c}
+                </span>
+              ))}
+              {rawOpportunity?.admissionMethods?.includes('dgnl') && (
+                <span className="text-[9px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-1.5 py-0.5 rounded">
+                  ĐGNL
+                </span>
+              )}
+              {rawOpportunity?.admissionMethods?.includes('dgtd') && (
+                <span className="text-[9px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 px-1.5 py-0.5 rounded">
+                  ĐGTD
+                </span>
+              )}
+            </div>
+          )}
+
           <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between gap-2">
             <Link
               href={linkPath}
@@ -285,19 +310,42 @@ export default function OpportunityCard({
               <span>&rarr;</span>
             </Link>
 
-            {canonicalUrl && (
-              <a
-                href={canonicalUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="text-[11px] font-medium text-slate-300 hover:text-amber-300 px-2.5 py-1 rounded-xl liquid-glass border border-white/10 hover:border-amber-400/40 flex items-center gap-1 transition-all"
-                title="Đến trang tuyển sinh / học bổng chính thức của trường"
-              >
-                <span>Nguồn gốc</span>
-                <ArrowSquareOut size={13} weight="bold" />
-              </a>
-            )}
+            <div className="flex items-center gap-1.5">
+              {deadline && (
+                <a
+                  href={getGoogleCalendarUrl({
+                    title,
+                    deadline,
+                    canonicalUrl: canonicalUrl || '',
+                    organization,
+                    studyLocation: location,
+                    slug,
+                  }) || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-[11px] font-medium text-sky-300 hover:text-sky-200 px-2 py-1 rounded-xl liquid-glass border border-sky-400/20 hover:border-sky-400/40 flex items-center gap-1 transition-all"
+                  title="Thêm hạn nộp vào Google Calendar (Common App & UCAS benchmark)"
+                >
+                  <CalendarBlank size={12} weight="bold" />
+                  <span>+ GCal</span>
+                </a>
+              )}
+
+              {canonicalUrl && (
+                <a
+                  href={canonicalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-[11px] font-medium text-slate-300 hover:text-amber-300 px-2.5 py-1 rounded-xl liquid-glass border border-white/10 hover:border-amber-400/40 flex items-center gap-1 transition-all"
+                  title="Đến trang tuyển sinh / học bổng chính thức của trường"
+                >
+                  <span>Nguồn gốc</span>
+                  <ArrowSquareOut size={13} weight="bold" />
+                </a>
+              )}
+            </div>
           </div>
         </div>
 

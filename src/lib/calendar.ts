@@ -86,3 +86,25 @@ export function downloadIcsFile(filename: string, content: string): void {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+
+/**
+ * Tạo link 1-Click đồng bộ trực tiếp vào Google Calendar (Chuẩn Common App & UCAS)
+ */
+export function getGoogleCalendarUrl(opportunity: OpportunityDetail | any): string | null {
+  if (!opportunity.deadline) return null;
+
+  const deadlineDate = new Date(opportunity.deadline);
+  const startDate = new Date(deadlineDate.getTime() - 2 * 60 * 60 * 1000); // 2h trước hạn
+
+  const formatGCalDate = (d: Date) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+  const title = encodeURIComponent(`⏰ Hạn Chót Nộp: ${opportunity.title}`);
+  const dates = `${formatGCalDate(startDate)}/${formatGCalDate(deadlineDate)}`;
+  const details = encodeURIComponent(
+    `Hạn chót nộp hồ sơ chương trình: ${opportunity.title}\nĐơn vị: ${opportunity.organization}\nĐịa điểm: ${opportunity.studyLocation || 'Toàn cầu'}\n\nLink nộp hồ sơ chính thức: ${opportunity.canonicalUrl}\nTra cứu chi tiết: https://hocbong.vn/hoc-bong/${opportunity.slug}`
+  );
+  const location = encodeURIComponent(opportunity.organization || 'Trực tuyến');
+
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}`;
+}
+

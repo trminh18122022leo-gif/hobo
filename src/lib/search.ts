@@ -16,17 +16,18 @@ export function removeVietnameseTones(str: string): string {
 }
 
 let miniSearch = new MiniSearch({
-  fields: ['title', 'organization', 'summary', 'titleNoAccent', 'orgNoAccent', 'summaryNoAccent', 'fieldNames'],
+  fields: ['title', 'organization', 'summary', 'titleNoAccent', 'orgNoAccent', 'summaryNoAccent', 'fieldNames', 'comboText'],
   storeFields: [
     'id', 'slug', 'kind', 'title', 'organization', 'summary', 'deadline',
     'fundingType', 'fundingValueVnd', 'studyLocation', 'fieldCodes',
     'degreeLevel', 'rankScore', 'confidence', 'lastVerifiedAt',
-    'canonicalUrl', 'applyStart', 'organizationType', 'status', 'firstSeenAt'
+    'canonicalUrl', 'applyStart', 'organizationType', 'status', 'firstSeenAt',
+    'subjectCombinations', 'admissionMethods'
   ],
   searchOptions: {
     fuzzy: 0.2,
     prefix: true,
-    boost: { title: 3, titleNoAccent: 3, organization: 2, orgNoAccent: 2 }
+    boost: { title: 3, titleNoAccent: 3, organization: 2, orgNoAccent: 2, comboText: 2.5 }
   }
 });
 
@@ -67,6 +68,27 @@ export async function initSearchIndex(): Promise<void> {
 
         const fieldNames = fieldCodes.map((code: string) => taxonomy[code] || code).join(' ');
 
+        // Trích xuất tổ hợp môn xét tuyển (Chuẩn Tuyển Sinh Số & MOET)
+        const textBlob = `${opp.title} ${opp.organization} ${opp.summary || ''} ${opp.requirements || ''}`;
+        const textUpper = textBlob.toUpperCase();
+        const textLower = textBlob.toLowerCase();
+
+        const subjectCombinations: string[] = [];
+        if (/\bA00\b/.test(textUpper) || (opp.kind === 'undergraduate' && (textLower.includes('kỹ thuật') || textLower.includes('công nghệ') || textLower.includes('bách khoa')))) subjectCombinations.push('A00');
+        if (/\bA01\b/.test(textUpper) || (opp.kind === 'undergraduate' && (textLower.includes('tiếng anh') || textLower.includes('kinh tế') || textLower.includes('cntt') || textLower.includes('ngoại thương')))) subjectCombinations.push('A01');
+        if (/\bB00\b/.test(textUpper) || textLower.includes('y dược') || textLower.includes('sinh học') || textLower.includes('y khoa') || textLower.includes('y hà nội')) subjectCombinations.push('B00');
+        if (/\bC00\b/.test(textUpper) || textLower.includes('xã hội') || textLower.includes('báo chí') || textLower.includes('luật') || textLower.includes('nhân văn')) subjectCombinations.push('C00');
+        if (/\bD01\b/.test(textUpper) || (opp.kind === 'undergraduate' && (textLower.includes('ngoại thương') || textLower.includes('kinh doanh') || textLower.includes('ngoại ngữ') || textLower.includes('ulis') || textLower.includes('quản trị')))) subjectCombinations.push('D01');
+        if (/\bD07\b/.test(textUpper) || textLower.includes('hóa sinh') || textLower.includes('dược')) subjectCombinations.push('D07');
+
+        const admissionMethods: string[] = [];
+        if (textLower.includes('đgnl') || textLower.includes('đánh giá năng lực') || textLower.includes('hsa') || textLower.includes('aptitude') || textLower.includes('vnu')) admissionMethods.push('dgnl');
+        if (textLower.includes('đgtd') || textLower.includes('đánh giá tư duy') || textLower.includes('tsa') || textLower.includes('bách khoa')) admissionMethods.push('dgtd');
+        if (textLower.includes('học bạ') || textLower.includes('hoc ba') || textLower.includes('xét tuyển sớm')) admissionMethods.push('hoc_ba');
+        if (textLower.includes('tuyển thẳng') || textLower.includes('ielts') || textLower.includes('sat') || textLower.includes('act') || textLower.includes('olympiad')) admissionMethods.push('tuyen_thang');
+
+        const comboText = `${subjectCombinations.join(' ')} ${admissionMethods.join(' ')}`;
+
         return {
           id: opp.id,
           slug: opp.slug,
@@ -92,6 +114,9 @@ export async function initSearchIndex(): Promise<void> {
           fieldNames,
           fieldCodes,
           degreeLevel,
+          subjectCombinations,
+          admissionMethods,
+          comboText,
         };
       });
 
@@ -121,6 +146,8 @@ export interface SearchQueryInput {
   degreeLevel?: string | string[];
   studyLocation?: string;
   fundingType?: string | string[];
+  subjectCombinations?: string | string[];
+  admissionMethods?: string | string[];
   page?: number;
   limit?: number;
   sort?: 'relevance' | 'deadline' | 'rank' | 'newest';
@@ -143,6 +170,8 @@ export async function searchOpportunities(query: SearchQueryInput) {
   const fieldCodes = toArray(query.fieldCodes);
   const degreeLevels = toArray(query.degreeLevel).map((d) => d.toLowerCase());
   const fundingTypes = toArray(query.fundingType).map((f) => f.toLowerCase());
+  const subjectCombinations = toArray(query.subjectCombinations).map((s) => s.toUpperCase());
+  const admissionMethods = toArray(query.admissionMethods).map((m) => m.toLowerCase());
 
   let rawResults = q
     ? miniSearch.search(q).map((result) => {
@@ -184,6 +213,16 @@ export async function searchOpportunities(query: SearchQueryInput) {
       if (!fundingTypes.includes(docFunding)) return false;
     }
 
+    if (subjectCombinations.length > 0) {
+      const hasCombo = subjectCombinations.some((c: string) => doc.subjectCombinations?.includes(c));
+      if (!hasCombo) return false;
+    }
+
+    if (admissionMethods.length > 0) {
+      const hasMethod = admissionMethods.some((m: string) => doc.admissionMethods?.includes(m));
+      if (!hasMethod) return false;
+    }
+
     return true;
   });
 
@@ -193,6 +232,8 @@ export async function searchOpportunities(query: SearchQueryInput) {
     studyLocation: {},
     fundingType: {},
     degreeLevel: {},
+    subjectCombinations: {},
+    admissionMethods: {},
   };
 
   allDocuments.forEach((doc: any) => {
@@ -208,6 +249,16 @@ export async function searchOpportunities(query: SearchQueryInput) {
     if (Array.isArray(doc.degreeLevel)) {
       doc.degreeLevel.forEach((lvl: string) => {
         facets.degreeLevel[lvl] = (facets.degreeLevel[lvl] || 0) + 1;
+      });
+    }
+    if (Array.isArray(doc.subjectCombinations)) {
+      doc.subjectCombinations.forEach((combo: string) => {
+        facets.subjectCombinations[combo] = (facets.subjectCombinations[combo] || 0) + 1;
+      });
+    }
+    if (Array.isArray(doc.admissionMethods)) {
+      doc.admissionMethods.forEach((method: string) => {
+        facets.admissionMethods[method] = (facets.admissionMethods[method] || 0) + 1;
       });
     }
   });
@@ -263,6 +314,8 @@ export async function searchOpportunities(query: SearchQueryInput) {
       daysUntilDeadline,
       canonicalUrl: doc.canonicalUrl,
       status: doc.status,
+      subjectCombinations: doc.subjectCombinations || [],
+      admissionMethods: doc.admissionMethods || [],
     };
   });
 

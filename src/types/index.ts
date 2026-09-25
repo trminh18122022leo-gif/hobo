@@ -54,6 +54,8 @@ export interface SearchQuery {
   degreeLevel?: string[];
   studyLocation?: string;
   fundingType?: FundingType[];
+  subjectCombinations?: string[];
+  admissionMethods?: string[];
   deadlineBefore?: string;
   deadlineAfter?: string;
   page?: number;
@@ -93,6 +95,8 @@ export interface OpportunityCard {
   status: string;
   applicationFee?: string | null;
   deadlinePattern?: string | null;
+  subjectCombinations?: string[];
+  admissionMethods?: string[];
 }
 
 export interface SearchFacets {
@@ -100,6 +104,8 @@ export interface SearchFacets {
   fundingType: FacetCount[];
   studyLocation: FacetCount[];
   degreeLevel: FacetCount[];
+  subjectCombinations?: FacetCount[];
+  admissionMethods?: FacetCount[];
 }
 
 export interface FacetCount {

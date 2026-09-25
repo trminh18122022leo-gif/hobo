@@ -38,6 +38,8 @@ export const searchQuerySchema = z.object({
   degreeLevel: z.union([z.string(), z.array(z.string())]).optional(),
   studyLocation: z.string().optional(),
   fundingType: z.union([z.string(), z.array(z.string())]).optional(),
+  subjectCombinations: z.union([z.string(), z.array(z.string())]).optional(),
+  admissionMethods: z.union([z.string(), z.array(z.string())]).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(20),
   sort: z.enum(['relevance', 'deadline', 'rank', 'newest']).optional().default('relevance'),
