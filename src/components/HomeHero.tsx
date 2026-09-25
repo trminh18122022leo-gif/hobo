@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { MagnifyingGlass, Sparkle, ShieldCheck, Crown } from '@phosphor-icons/react';
+import { MagnifyingGlass } from '@phosphor-icons/react';
 
 interface HomeHeroProps {
   stats: {
@@ -34,22 +34,13 @@ export default function HomeHero({ stats }: HomeHeroProps) {
       animate="show"
       className="text-center relative py-12 md:py-20"
     >
-      {/* Precision Haute Horlogerie Dial Badge */}
-      <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full liquid-glass-gold mb-6 border border-amber-400/40 shadow-[0_0_25px_rgba(212,175,55,0.25)]">
-        <Crown size={15} weight="fill" className="text-amber-300 animate-pulse" />
-        <span className="text-[11px] uppercase tracking-[0.25em] font-bold text-amber-200">
-          Hệ Thống Thẩm Định Thời Gian Thực 2026 – 2027
-        </span>
-        <Sparkle size={13} weight="fill" className="text-amber-300" />
-      </motion.div>
-
-      {/* Main Luxury Title */}
+      {/* Main Title */}
       <motion.h1
         variants={itemVariants}
-        className="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight text-slate-100 max-w-4xl mx-auto leading-[1.1]"
+        className="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight text-slate-100 max-w-5xl mx-auto leading-[1.15]"
       >
-        Cổng Học Bổng & Tuyển Sinh <br />
-        <span className="text-gold-gradient">Chuẩn Xác Hàng Đầu</span>
+        Cổng Thông Tin <br className="hidden sm:inline" />
+        <span className="text-gold-gradient">Tuyển Sinh & Học Bổng</span>
       </motion.h1>
 
       <motion.p
