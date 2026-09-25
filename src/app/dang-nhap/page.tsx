@@ -72,12 +72,19 @@ function LoginForm() {
         // Clean guest data on successful merge
         clearGuestData();
 
+        // Synchronously store user in localStorage and dispatch auth event for instant UI update
+        if (data.data?.user) {
+          try {
+            localStorage.setItem('user_session', JSON.stringify(data.data.user));
+          } catch {}
+        }
+        window.dispatchEvent(new Event('auth-change'));
+
         setSuccess('Đăng nhập thành công! Đang chuyển hướng...');
         setTimeout(() => {
           const returnTo = searchParams.get('returnTo') || '/';
-          router.push(returnTo);
-          router.refresh();
-        }, 800);
+          window.location.href = returnTo;
+        }, 400);
       } catch (err: any) {
         setError('Đã xảy ra lỗi kết nối. Vui lòng thử lại sau.');
       }

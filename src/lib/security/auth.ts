@@ -28,7 +28,7 @@ export async function signToken(payload: { sub: string; email: string; role: str
   return new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('15m') // short-lived 15m as per v2.2 spec
+    .setExpirationTime('7d')
     .sign(secretKey);
 }
 

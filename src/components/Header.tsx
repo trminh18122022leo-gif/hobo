@@ -27,19 +27,69 @@ export default function Header() {
     studentVerified?: boolean;
     universityName?: string;
   }
-  const [user, setUser] = useState<UserState | null>(null);
+  const [user, setUser] = useState<UserState | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('user_session');
+        if (cached) return JSON.parse(cached);
+      } catch {}
+    }
+    return null;
+  });
   const { selectedOpps } = useCompare();
 
+  const handleLogout = async () => {
+    try {
+      localStorage.removeItem('user_session');
+    } catch {}
+    setUser(null);
+    window.dispatchEvent(new Event('auth-change'));
+    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    window.location.href = '/';
+  };
+
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.data) {
-          setUser(data.data.user || data.data);
+    const fetchUser = () => {
+      fetch('/api/auth/me')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.data?.user) {
+            setUser(data.data.user);
+            try {
+              localStorage.setItem('user_session', JSON.stringify(data.data.user));
+            } catch {}
+          } else if (data.status === 401 || !data.success) {
+            setUser(null);
+            try {
+              localStorage.removeItem('user_session');
+            } catch {}
+          }
+        })
+        .catch(() => {});
+    };
+
+    fetchUser();
+
+    const handleAuthChange = () => {
+      try {
+        const cached = localStorage.getItem('user_session');
+        if (cached) {
+          setUser(JSON.parse(cached));
+        } else {
+          setUser(null);
         }
-      })
-      .catch(() => {});
-  }, []);
+      } catch {}
+      fetchUser();
+    };
+
+    window.addEventListener('auth-change', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+
+    return () => {
+      window.removeEventListener('auth-change', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
+  }, [pathname]);
 
   const navLinks = [
     { href: '/tim-kiem', label: 'Khám Phá Học Bổng', icon: MagnifyingGlass },
@@ -142,12 +192,7 @@ export default function Header() {
                 </Link>
 
                 <button
-                  onClick={() => {
-                    fetch('/api/auth/logout', { method: 'POST' }).then(() => {
-                      setUser(null);
-                      window.location.reload();
-                    });
-                  }}
+                  onClick={handleLogout}
                   className="flex items-center text-xs font-semibold text-rose-400 hover:text-rose-300 px-2.5 py-1.5 hover:bg-rose-950/30 border border-rose-500/20 rounded-xl transition"
                 >
                   <SignOut className="mr-1" size={14} /> Thoát
@@ -227,7 +272,8 @@ export default function Header() {
                   </Link>
                   <button
                     onClick={() => {
-                      fetch('/api/auth/logout', { method: 'POST' }).then(() => window.location.reload());
+                      setIsMobileMenuOpen(false);
+                      handleLogout();
                     }}
                     className="block w-full text-left px-3 py-2 text-xs font-semibold text-rose-400"
                   >

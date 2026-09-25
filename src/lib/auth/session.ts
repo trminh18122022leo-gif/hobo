@@ -102,13 +102,13 @@ export function extractClientMetadata(request: Request): SessionDevice {
 }
 
 /**
- * Sign short-lived JWT Access Token (15 minutes expiry)
+ * Sign JWT Access Token (7 days validity)
  */
 export async function signAccessToken(payload: AuthPayload): Promise<string> {
   return new SignJWT(payload as any)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('15m')
+    .setExpirationTime('7d')
     .sign(secretKey);
 }
 
@@ -341,23 +341,58 @@ export async function getAuthUser(request: Request) {
   }
 
   // 2. Check cookies (access-token or legacy auth-token)
-  if (!token) {
-    const cookieHeader = request.headers.get('cookie') || '';
+  const cookieHeader = request.headers.get('cookie') || '';
+  if (!token && cookieHeader) {
     const match = cookieHeader.match(/(?:access-token|auth-token)=([^;]+)/);
     if (match) {
       token = match[1];
     }
   }
 
-  if (!token) return null;
+  if (token) {
+    const payload = await verifyAccessToken(token);
+    if (payload && payload.sub && payload.email) {
+      return {
+        id: payload.sub as string,
+        email: payload.email as string,
+        role: (payload.role as string) || 'user',
+        studentVerified: Boolean(payload.studentVerified),
+      };
+    }
+  }
 
-  const payload = await verifyAccessToken(token);
-  if (!payload || !payload.sub || !payload.email) return null;
+  // 3. Resilient Fallback: If access-token is missing or expired, check valid refresh-token in DB
+  if (cookieHeader) {
+    const refreshMatch = cookieHeader.match(/refresh-token=([^;]+)/);
+    if (refreshMatch) {
+      try {
+        const rawRefreshToken = refreshMatch[1];
+        const tokenHash = hashToken(rawRefreshToken);
+        const session = await prisma.refreshToken.findUnique({
+          where: { tokenHash },
+          include: { user: true },
+        });
 
-  return {
-    id: payload.sub as string,
-    email: payload.email as string,
-    role: (payload.role as string) || 'user',
-    studentVerified: Boolean(payload.studentVerified),
-  };
+        if (
+          session &&
+          !session.isRevoked &&
+          new Date() <= session.expiresAt &&
+          session.user &&
+          session.user.status !== 'soft_deleted'
+        ) {
+          return {
+            id: session.user.id,
+            email: session.user.email,
+            role: session.user.role,
+            studentVerified: Boolean(session.user.studentVerifiedSourceId),
+          };
+        }
+      } catch (err) {
+        console.error('getAuthUser refresh fallback error:', err);
+      }
+    }
+  }
+
+  return null;
 }
+

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import HomeHero from '@/components/HomeHero';
+import AcademicPrestigePortal from '@/components/portal/AcademicPrestigePortal';
 import prisma from '@/lib/db';
 import { KIND_LABELS, FUNDING_LABELS } from '@/types';
 import { CalendarBlank, MapPin, Bank, ArrowRight, GraduationCap, Sparkle, Clock, ShieldCheck, ArrowSquareOut } from '@phosphor-icons/react/dist/ssr';
@@ -59,6 +60,9 @@ export default async function Home() {
     <div className="space-y-20 py-4">
       {/* Hero Section */}
       <HomeHero stats={stats} />
+
+      {/* Academic Prestige Glass & Liquid Glass Sliding Tabs Portal */}
+      <AcademicPrestigePortal />
 
       {/* Sắp hết hạn — Urgent Section with Liquid Glass & Ruby Red Urgency */}
       <section className="relative">
