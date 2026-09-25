@@ -1,23 +1,25 @@
-import { searchOpportunities } from '../src/lib/search';
+import { searchOpportunities, refreshSearchIndex } from '../src/lib/search';
 import prisma from '../src/lib/db';
 
 async function test() {
-  const sourcesCount = await prisma.source.count();
-  const totalOpps = await prisma.opportunity.count();
-  console.log('Total Sources in DB:', sourcesCount);
-  console.log('Total Opportunities in DB:', totalOpps);
+  await refreshSearchIndex();
 
-  const internshipRes = await searchOpportunities({ kind: 'internship' });
-  console.log('Internship search results count:', internshipRes.total);
-  if (internshipRes.items.length > 0) {
-    console.log('Sample internship:', internshipRes.items[0].title);
+  const melb = await searchOpportunities({ q: 'Melbourne' });
+  console.log('Melbourne search count:', melb.total);
+  if (melb.items.length > 0) {
+    console.log('Title:', melb.items[0].title);
+    console.log('Location:', melb.items[0].studyLocation);
+    console.log('Funding:', melb.items[0].fundingValueVnd);
   }
 
-  const freeFeeRes = await searchOpportunities({ q: 'miễn phí' });
-  console.log('Free fee search results count:', freeFeeRes.total);
+  const deakin = await searchOpportunities({ q: 'Deakin' });
+  console.log('Deakin search count:', deakin.total);
 
-  const daadRes = await searchOpportunities({ q: 'DAAD' });
-  console.log('DAAD search results count:', daadRes.total);
+  const destAus = await searchOpportunities({ q: 'Destination Australia' });
+  console.log('Destination Australia count:', destAus.total);
+
+  const rtp = await searchOpportunities({ q: 'RTP' });
+  console.log('RTP Research count:', rtp.total);
 
   await prisma.$disconnect();
 }

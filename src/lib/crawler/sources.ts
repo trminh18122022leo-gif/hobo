@@ -24,6 +24,20 @@ export interface SourceConfig {
 
 export const INITIAL_SOURCES: SourceConfig[] = [
   {
+    "name": "ISC Education - Cổng Học Bổng Du Học Úc & Quốc Tế",
+    "baseUrl": "https://www.isc.education",
+    "kind": "PORTAL",
+    "tier": "A",
+    "fetchStrategy": "HTML",
+    "country": "Vietnam",
+    "category": "Scholarships",
+    "features": "Cổng thông tin & công cụ săn học bổng du học Úc, Anh, Mỹ, Canada; tổng hợp học bổng đại học top Go8, miễn 100% dịch vụ tư vấn và hỗ trợ hồ sơ",
+    "language": "Vietnamese",
+    "appFee": "Free",
+    "deadlinePattern": "Kỳ nhập học Tháng 2, Tháng 7, Tháng 10 hàng năm",
+    "notes": "Đại diện tuyển sinh chính thức các trường đại học Úc, Anh, Mỹ"
+  },
+  {
     "name": "Cổng thông tin tuyển sinh Bộ GD&ĐT",
     "baseUrl": "https://tuyensinh.moet.gov.vn",
     "kind": "GOVERNMENT",

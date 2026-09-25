@@ -5,6 +5,7 @@ import { extractOpportunities, calculateRankScore } from './extractor';
 import { crawlTuyensinhso } from './tuyensinhso-crawler';
 import { crawlIdpScholarships } from './idp-crawler';
 import { EXTENDED_PORTAL_DATA } from './multi-portal-crawler';
+import { crawlIscEducationDeep } from './deep-crawler';
 
 export type CrawlSummary = {
   sourcesChecked: number;
@@ -319,6 +320,58 @@ export async function runCrawlCycle(): Promise<CrawlSummary> {
             },
           });
           summary.updatedRecords++;
+        }
+      }
+
+      // ── ISC Education Deep Traversal ──────────────────────
+      const sourceIsc = await prisma.source.findUnique({ where: { baseUrl: 'https://www.isc.education' } });
+      if (sourceIsc) {
+        summary.sourcesChecked++;
+        const iscItems = await crawlIscEducationDeep();
+        for (const item of iscItems) {
+          const existing = await prisma.opportunity.findUnique({ where: { slug: item.slug } });
+          await prisma.opportunity.upsert({
+            where: { slug: item.slug },
+            update: {
+              title: item.title,
+              summary: item.summary,
+              fundingValueVnd: item.fundingValueVnd,
+              deadline: item.deadline,
+              canonicalUrl: item.canonicalUrl,
+              lastVerifiedAt: new Date(),
+              linkStatus: 'alive',
+            },
+            create: {
+              sourceId: sourceIsc.id,
+              slug: item.slug,
+              kind: item.kind,
+              title: item.title,
+              organization: item.organization,
+              organizationType: item.organizationType,
+              summary: item.summary,
+              requirements: JSON.stringify(item.requirements),
+              fieldCodes: JSON.stringify(item.fieldCodes),
+              degreeLevel: JSON.stringify(item.degreeLevel),
+              studyLocation: item.studyLocation,
+              fundingType: item.fundingType,
+              fundingValueVnd: item.fundingValueVnd,
+              applyStart: item.applyStart,
+              deadline: item.deadline,
+              canonicalUrl: item.canonicalUrl,
+              rankScore: item.rankScore,
+              confidence: item.confidence,
+              status: item.status,
+              requiredDocuments: JSON.stringify(item.requiredDocuments),
+              applicationSteps: JSON.stringify(item.applicationSteps),
+              timelineMilestones: JSON.stringify(item.timelineMilestones),
+              benefits: JSON.stringify(item.benefits),
+              selectionRounds: item.selectionRounds,
+              lastVerifiedAt: new Date(),
+              linkStatus: 'alive',
+            },
+          });
+          if (existing) summary.updatedRecords++;
+          else summary.newRecords++;
         }
       }
     } catch (crawlErr) {
