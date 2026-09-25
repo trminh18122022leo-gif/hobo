@@ -9,18 +9,25 @@ class GeminiProvider implements LLMProvider {
     const key = process.env.GEMINI_API_KEY;
     if (!key) throw new Error('GEMINI_API_KEY not set');
     
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        systemInstruction: { parts: [{ text: systemPrompt }] }
-      })
-    });
-    
-    if (!response.ok) throw new Error(`Gemini API error: ${response.statusText}`);
-    const data = await response.json();
-    return data.candidates[0].content.parts[0].text;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          systemInstruction: { parts: [{ text: systemPrompt }] }
+        }),
+        signal: controller.signal as any,
+      });
+      if (!response.ok) throw new Error(`Gemini API error: ${response.statusText}`);
+      const data = await response.json();
+      return data.candidates[0].content.parts[0].text;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 }
 
@@ -29,25 +36,32 @@ class GroqProvider implements LLMProvider {
   async call(prompt: string, systemPrompt: string): Promise<string> {
     const key = process.env.GROQ_API_KEY;
     if (!key) throw new Error('GROQ_API_KEY not set');
-    
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${key}`
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt }
-        ]
-      })
-    });
-    
-    if (!response.ok) throw new Error(`Groq API error: ${response.statusText}`);
-    const data = await response.json();
-    return data.choices[0].message.content;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: prompt }
+          ]
+        }),
+        signal: controller.signal as any,
+      });
+      if (!response.ok) throw new Error(`Groq API error: ${response.statusText}`);
+      const data = await response.json();
+      return data.choices[0].message.content;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 }
 
@@ -72,12 +86,18 @@ export class LLMRouter {
       try {
         const result = await provider.call(userPrompt, systemPrompt);
         if (cacheKey) {
+          // Evict oldest entry when cache exceeds 500 items to prevent unbounded growth
+          if (this.cache.size >= 500) {
+            const oldestKey = this.cache.keys().next().value;
+            if (oldestKey) this.cache.delete(oldestKey);
+          }
           this.cache.set(cacheKey, {
             result,
             expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days
           });
         }
         return result;
+
       } catch (e) {
         console.error(`${provider.name} failed:`, e);
       }

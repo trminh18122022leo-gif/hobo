@@ -13,12 +13,23 @@ export interface EmailOptions {
 class EmailRouter {
   private resendApiKey = process.env.RESEND_API_KEY;
   private brevoApiKey = process.env.BREVO_API_KEY;
-  private fromEmail = process.env.EMAIL_FROM || 'Cổng Thông Tin Tuyển Sinh & Học Bổng <noreply@hocbong.vn>';
+
+  private getFromEmail(): string {
+    if (process.env.EMAIL_FROM) {
+      return process.env.EMAIL_FROM;
+    }
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('⚠️ [EmailRouter] EMAIL_FROM environment variable should be configured in production.');
+    }
+    return 'Cổng Thông Tin Tuyển Sinh & Học Bổng <noreply@hocbong.vn>';
+  }
 
   /**
    * Primary dispatcher with failover
    */
   async send(options: EmailOptions): Promise<{ success: boolean; provider: string; messageId?: string; error?: string }> {
+    const fromAddress = this.getFromEmail();
+
     // 1. Try Primary: Resend
     if (this.resendApiKey) {
       try {
@@ -29,7 +40,7 @@ class EmailRouter {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: this.fromEmail,
+            from: fromAddress,
             to: options.to,
             subject: options.subject,
             html: options.html,

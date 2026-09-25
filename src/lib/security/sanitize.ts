@@ -60,7 +60,7 @@ export const profileInputSchema = z.object({
   dataResidencyPreference: z.enum(['vietnam', 'global']).optional().default('vietnam'),
 });
 
-export function sanitizeHtml(input: string): string {
+export function sanitizePlainText(input: string, maxLength: number = 5000): string {
   if (!input || typeof input !== 'string') return '';
   const cleaned = sanitize(input, {
     allowedTags: [],
@@ -68,5 +68,27 @@ export function sanitizeHtml(input: string): string {
     disallowedTagsMode: 'discard',
   });
   const trimmed = cleaned.trim();
-  return trimmed.length > 5000 ? trimmed.substring(0, 5000) : trimmed;
+  return trimmed.length > maxLength ? trimmed.substring(0, maxLength) : trimmed;
 }
+
+export function sanitizeRichText(input: string, maxLength: number = 20000): string {
+  if (!input || typeof input !== 'string') return '';
+  const cleaned = sanitize(input, {
+    allowedTags: ['b', 'i', 'em', 'strong', 'u', 'p', 'br', 'ul', 'ol', 'li', 'a', 'blockquote', 'h3', 'h4'],
+    allowedAttributes: {
+      a: ['href', 'target', 'rel'],
+    },
+    allowedSchemes: ['http', 'https', 'mailto'],
+    disallowedTagsMode: 'discard',
+  });
+  const trimmed = cleaned.trim();
+  return trimmed.length > maxLength ? trimmed.substring(0, maxLength) : trimmed;
+}
+
+export function sanitizeHtml(input: string, options?: { richText?: boolean; maxLength?: number }): string {
+  if (options?.richText) {
+    return sanitizeRichText(input, options.maxLength);
+  }
+  return sanitizePlainText(input, options?.maxLength);
+}
+

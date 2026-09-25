@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchOpportunities } from '@/lib/search';
 import { searchQuerySchema } from '@/lib/security/sanitize';
+import { searchLimiter, enforceRateLimit, rateLimitResponse } from '@/lib/security/rate-limit';
 
 export async function GET(request: NextRequest) {
   try {
+    // 1. Rate Limiting Check
+    const rateCheck = enforceRateLimit(searchLimiter, request);
+    if (!rateCheck.allowed) {
+      return rateLimitResponse(rateCheck.retryAfter);
+    }
+
     const { searchParams } = new URL(request.url);
     const queryObj: Record<string, any> = {};
 

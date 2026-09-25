@@ -2,20 +2,7 @@ import { SignJWT, jwtVerify, JWTPayload } from 'jose';
 import bcryptjs from 'bcryptjs';
 import prisma from '@/lib/db';
 import { verifyAccessToken, getAuthUser as getSessionAuthUser } from '@/lib/auth/session';
-
-function getJwtSecretKey(): Uint8Array {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    if (process.env.NODE_ENV === 'production') {
-      console.warn('⚠️ WARNING: JWT_SECRET is not defined. Using build/runtime fallback secret.');
-      return new TextEncoder().encode('fallback-prod-jwt-secret-replace-in-env-32ch!');
-    }
-    return new TextEncoder().encode('dev-only-local-secret-do-not-use-in-prod-32ch!');
-  }
-  return new TextEncoder().encode(secret);
-}
-
-const secretKey = getJwtSecretKey();
+import { getJwtSecretKey } from '@/lib/security/jwt';
 
 export interface AuthUser {
   id: string;
@@ -25,6 +12,7 @@ export interface AuthUser {
 }
 
 export async function signToken(payload: { sub: string; email: string; role: string; studentVerified?: boolean }): Promise<string> {
+  const secretKey = getJwtSecretKey();
   return new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -34,6 +22,7 @@ export async function signToken(payload: { sub: string; email: string; role: str
 
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
+    const secretKey = getJwtSecretKey();
     const { payload } = await jwtVerify(token, secretKey);
     return payload;
   } catch (error) {
@@ -42,7 +31,9 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
 }
 
 export async function hashPassword(password: string): Promise<string> {
-  return bcryptjs.hash(password, 12);
+  const envRounds = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
+  const rounds = isNaN(envRounds) ? 12 : Math.min(Math.max(envRounds, 10), 14);
+  return bcryptjs.hash(password, rounds);
 }
 
 export async function comparePassword(password: string, hash: string): Promise<boolean> {
@@ -53,8 +44,18 @@ export async function comparePassword(password: string, hash: string): Promise<b
  * Extract authenticated user from request (checks cookies and Bearer header)
  */
 export async function getAuthUser(request: Request): Promise<AuthUser | null> {
-  const sessionUser = await getSessionAuthUser(request);
+  const sessionUser = (await getSessionAuthUser(request)) as any;
   if (!sessionUser) return null;
+
+  // If already validated from DB in session fallback, avoid duplicate query
+  if (sessionUser._validated) {
+    return {
+      id: sessionUser.id,
+      email: sessionUser.email,
+      role: sessionUser.role,
+      studentVerified: sessionUser.studentVerified,
+    };
+  }
 
   // Verify that the user still exists in database and is not soft deleted
   try {

@@ -1,5 +1,35 @@
 import prisma from '@/lib/db';
 
+/**
+ * SSRF guard: only allow http/https URLs pointing to public internet hosts.
+ * Blocks file://, ftp://, internal IPs (127.x, 10.x, 172.16-31.x, 192.168.x),
+ * and cloud metadata endpoints (169.254.x).
+ */
+function isValidPublicUrl(rawUrl: string): boolean {
+  try {
+    const url = new URL(rawUrl);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
+    const host = url.hostname.toLowerCase();
+    // Block localhost variants
+    if (host === 'localhost' || host === '0.0.0.0') return false;
+    // Block IPv6 loopback
+    if (host === '::1' || host === '[::1]') return false;
+    // Block private/link-local IPv4 ranges
+    const ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (ipv4) {
+      const [, a, b] = ipv4.map(Number);
+      if (a === 10) return false;                         // 10.0.0.0/8
+      if (a === 127) return false;                        // 127.0.0.0/8
+      if (a === 169 && b === 254) return false;           // 169.254.0.0/16 (AWS metadata)
+      if (a === 172 && b >= 16 && b <= 31) return false;  // 172.16.0.0/12
+      if (a === 192 && b === 168) return false;           // 192.168.0.0/16
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export interface LinkCheckSummary {
   totalChecked: number;
   aliveCount: number;
@@ -39,11 +69,19 @@ export async function checkOpportunityLinks(limit: number = 50): Promise<LinkChe
 
     for (const opp of opps) {
       if (!opp.canonicalUrl) continue;
+
+      // SSRF guard: only allow http/https to public internet hosts
+      if (!isValidPublicUrl(opp.canonicalUrl)) {
+        console.warn(`[link-checker] Skipping suspicious URL: ${opp.canonicalUrl}`);
+        continue;
+      }
+
       summary.totalChecked++;
 
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
+        const timeoutMs = Number(process.env.LINK_CHECK_TIMEOUT_MS) || 8000;
+        const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
         let isAlive = false;
         let isDead = false;

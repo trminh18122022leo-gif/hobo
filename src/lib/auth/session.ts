@@ -2,20 +2,7 @@ import { SignJWT, jwtVerify, JWTPayload } from 'jose';
 import crypto from 'crypto';
 import prisma from '@/lib/db';
 import { logAudit } from '@/lib/security/audit';
-
-function getJwtSecretKey(): Uint8Array {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    if (process.env.NODE_ENV === 'production') {
-      console.warn('⚠️ WARNING: JWT_SECRET is not defined. Using build/runtime fallback secret.');
-      return new TextEncoder().encode('fallback-prod-jwt-secret-replace-in-env-32ch!');
-    }
-    return new TextEncoder().encode('dev-only-local-secret-do-not-use-in-prod-32ch!');
-  }
-  return new TextEncoder().encode(secret);
-}
-
-const secretKey = getJwtSecretKey();
+import { getJwtSecretKey } from '@/lib/security/jwt';
 
 export interface SessionDevice {
   deviceLabel: string;
@@ -105,6 +92,7 @@ export function extractClientMetadata(request: Request): SessionDevice {
  * Sign JWT Access Token (7 days validity)
  */
 export async function signAccessToken(payload: AuthPayload): Promise<string> {
+  const secretKey = getJwtSecretKey();
   return new SignJWT(payload as any)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -117,6 +105,7 @@ export async function signAccessToken(payload: AuthPayload): Promise<string> {
  */
 export async function verifyAccessToken(token: string): Promise<JWTPayload | null> {
   try {
+    const secretKey = getJwtSecretKey();
     const { payload } = await jwtVerify(token, secretKey);
     return payload;
   } catch {
@@ -385,6 +374,7 @@ export async function getAuthUser(request: Request) {
             email: session.user.email,
             role: session.user.role,
             studentVerified: Boolean(session.user.studentVerifiedSourceId),
+            _validated: true,
           };
         }
       } catch (err) {

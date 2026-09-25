@@ -1,12 +1,26 @@
 import crypto from 'crypto';
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || '12345678901234567890123456789012'; 
+function getEncryptionKey(): string {
+  const key = process.env.ENCRYPTION_KEY;
+  if (!key) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('ENCRYPTION_KEY must be set in production environment');
+    }
+    // Dev-only fallback — never used in production
+    return 'dev-only-fallback-key-32bytes!!!!!';
+  }
+  if (key.length < 32) {
+    throw new Error('ENCRYPTION_KEY must be at least 32 characters');
+  }
+  return key;
+}
+
 const ALGORITHM = 'aes-256-gcm';
 
 export function encrypt(plaintext: string): string {
   try {
     const iv = crypto.randomBytes(12);
-    const key = Buffer.from(ENCRYPTION_KEY, 'utf-8').slice(0, 32);
+    const key = Buffer.from(getEncryptionKey(), 'utf-8').slice(0, 32);
     const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
     
     let ciphertext = cipher.update(plaintext, 'utf8', 'hex');
@@ -27,7 +41,7 @@ export function decrypt(encrypted: string): string {
     
     const iv = Buffer.from(ivHex, 'hex');
     const tag = Buffer.from(tagHex, 'hex');
-    const key = Buffer.from(ENCRYPTION_KEY, 'utf-8').slice(0, 32);
+    const key = Buffer.from(getEncryptionKey(), 'utf-8').slice(0, 32);
     
     const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
     decipher.setAuthTag(tag);

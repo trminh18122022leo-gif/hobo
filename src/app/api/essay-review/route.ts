@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { llmRouter } from '@/lib/llm/router';
-import { apiLimiter } from '@/lib/security/rate-limit';
-import { getClientInfo } from '@/lib/security/audit';
+import { enforceRateLimit, essayLimiter, rateLimitResponse } from '@/lib/security/rate-limit';
+import { getAuthUser } from '@/lib/security/auth';
 
 const ACADEMIC_INTEGRITY_PROMPT = `Bạn là cố vấn bài luận học bổng chuyên sâu.
 NHIỆM VỤ CỦA BẠN: Đối chiếu bài viết của ứng viên với các tiêu chí xét tuyển của học bổng cụ thể được cung cấp.
@@ -22,14 +22,18 @@ QUY TẮC BẮT BUỘC VỀ LIÊM CHÍNH HỌC THUẬT:
 
 export async function POST(request: NextRequest) {
   try {
-    const clientInfo = getClientInfo(request);
-    const limitCheck = apiLimiter.consume(clientInfo.ip || 'anonymous');
-    if (!limitCheck.allowed) {
+    // Auth: must be logged in (prevent LLM quota abuse)
+    const authUser = await getAuthUser(request);
+    if (!authUser) {
       return NextResponse.json(
-        { success: false, error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.' },
-        { status: 429 }
+        { success: false, error: 'Vui lòng đăng nhập để sử dụng tính năng phân tích bài luận.' },
+        { status: 401 }
       );
     }
+
+    // Per-user rate limit (5 req / 10 min) — keyed by userId, not IP
+    const rl = enforceRateLimit(essayLimiter, request, authUser.id);
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfter);
 
     const body = await request.json();
     const { opportunityId, essayText } = body;
@@ -37,6 +41,13 @@ export async function POST(request: NextRequest) {
     if (!essayText || essayText.trim().length < 50) {
       return NextResponse.json(
         { success: false, error: 'Bài luận cần tối thiểu 50 ký tự để có thể phân tích.' },
+        { status: 400 }
+      );
+    }
+
+    if (essayText.length > 10000) {
+      return NextResponse.json(
+        { success: false, error: 'Bài luận quá dài. Tối đa 10.000 ký tự.' },
         { status: 400 }
       );
     }

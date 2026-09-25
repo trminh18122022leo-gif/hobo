@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkOpportunityLinks } from '@/lib/crawler/link-checker';
 import { getAuthUser } from '@/lib/security/auth';
+import { enforceRateLimit, crawlLimiter, rateLimitResponse } from '@/lib/security/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    const rl = enforceRateLimit(crawlLimiter, request);
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfter);
+
     const authHeader = request.headers.get('authorization');
-    const crawlSecret = process.env.CRAWL_API_SECRET || 'hb-crawl-internal-secret-token-2026';
+    const crawlSecret = process.env.CRAWL_API_SECRET;
+    if (!crawlSecret && process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ success: false, error: 'Server misconfiguration' }, { status: 500 });
+    }
     
     // Check authorization: either Bearer token or Admin session
     let isAuthorized = false;

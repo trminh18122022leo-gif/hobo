@@ -15,8 +15,25 @@ export type CrawlSummary = {
   errors: number;
 };
 
+export function logCrawlEvent(level: 'info' | 'warn' | 'error', message: string, meta?: Record<string, any>) {
+  const payload = {
+    timestamp: new Date().toISOString(),
+    service: 'crawler-scheduler',
+    level,
+    message,
+    ...meta,
+  };
+  if (level === 'error') {
+    console.error(JSON.stringify(payload));
+  } else if (level === 'warn') {
+    console.warn(JSON.stringify(payload));
+  } else {
+    console.log(JSON.stringify(payload));
+  }
+}
+
 export async function runCrawlCycle(): Promise<CrawlSummary> {
-  console.log(`[${new Date().toISOString()}] Starting crawl cycle...`);
+  logCrawlEvent('info', 'Starting crawl cycle');
   const summary: CrawlSummary = { sourcesChecked: 0, sourcesChanged: 0, newRecords: 0, updatedRecords: 0, errors: 0 };
 
   try {

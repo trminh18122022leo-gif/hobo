@@ -1,23 +1,24 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  const secret = process.env.HEALTH_CHECK_SECRET;
+  const isAuthorized = secret && authHeader === `Bearer ${secret}`;
+
   try {
-    // Quick DB connectivity check
     await prisma.$queryRaw`SELECT 1`;
-    return NextResponse.json({
-      status: 'ok',
-      uptime: process.uptime(),
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        status: 'error',
-        message: 'Database connection failed',
+
+    if (isAuthorized) {
+      return NextResponse.json({
+        status: 'ok',
+        uptime: process.uptime(),
         timestamp: new Date().toISOString(),
-      },
-      { status: 503 }
-    );
+      });
+    }
+    // Public: minimal response — no system info leaked
+    return NextResponse.json({ status: 'ok' });
+  } catch {
+    return NextResponse.json({ status: 'error' }, { status: 503 });
   }
 }

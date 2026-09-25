@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAdmin } from '@/lib/security/auth';
+import { enforceRateLimit, apiLimiter, rateLimitResponse } from '@/lib/security/rate-limit';
 
 export async function GET(request: NextRequest) {
   try {
+    const rl = enforceRateLimit(apiLimiter, request);
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfter);
+
     await requireAdmin(request);
 
     const { searchParams } = new URL(request.url);

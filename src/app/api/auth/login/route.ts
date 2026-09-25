@@ -5,9 +5,13 @@ import { loginSchema } from '@/lib/security/sanitize';
 import { logAudit } from '@/lib/security/audit';
 import { createSession } from '@/lib/auth/session';
 import { mergeGuestData } from '@/lib/auth/guest-merge';
+import { authLimiter, enforceRateLimit, rateLimitResponse } from '@/lib/security/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    const rateCheck = enforceRateLimit(authLimiter, request);
+    if (!rateCheck.allowed) return rateLimitResponse(rateCheck.retryAfter);
+
     const body = await request.json();
     const validatedData = loginSchema.parse(body);
 
@@ -117,14 +121,6 @@ export async function POST(request: NextRequest) {
     });
 
     response.cookies.set('access-token', session.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60,
-      path: '/',
-    });
-
-    response.cookies.set('auth-token', session.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

@@ -2,16 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runCrawlCycle } from '@/lib/crawler/scheduler';
 import { getAuthUser } from '@/lib/security/auth';
 import { logAudit, getClientInfo } from '@/lib/security/audit';
+import { crawlLimiter, enforceRateLimit, rateLimitResponse } from '@/lib/security/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    const rateCheck = enforceRateLimit(crawlLimiter, request);
+    if (!rateCheck.allowed) return rateLimitResponse(rateCheck.retryAfter);
+
+    // Strict Authentication Check (No hardcoded fallback secret)
     const authHeader = request.headers.get('authorization');
-    const crawlSecret = process.env.CRAWL_API_SECRET || 'hb-crawl-internal-secret-token-2026';
+    const configuredSecret = process.env.CRAWL_API_SECRET;
 
     let isAuthorized = false;
     let executorId = 'automated-scheduler';
 
-    if (authHeader && authHeader === `Bearer ${crawlSecret}`) {
+    // Allow Bearer token ONLY if CRAWL_API_SECRET is explicitly configured
+    if (configuredSecret && authHeader && authHeader === `Bearer ${configuredSecret}`) {
       isAuthorized = true;
     } else {
       const user = await getAuthUser(request);
@@ -22,7 +28,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (!isAuthorized) {
-      return NextResponse.json({ success: false, error: 'Không có quyền kích hoạt crawler' }, { status: 403 });
+      return NextResponse.json(
+        { success: false, error: 'Không có quyền kích hoạt crawler (Yêu cầu quyền Admin hoặc API Secret hợp lệ).' },
+        { status: 403 }
+      );
     }
 
     const summary = await runCrawlCycle();

@@ -6,9 +6,13 @@ import { logAudit } from '@/lib/security/audit';
 import { checkStudentEmail } from '@/lib/auth/student-verify';
 import { createSession } from '@/lib/auth/session';
 import { mergeGuestData } from '@/lib/auth/guest-merge';
+import { authLimiter, enforceRateLimit, rateLimitResponse } from '@/lib/security/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    const rateCheck = enforceRateLimit(authLimiter, request);
+    if (!rateCheck.allowed) return rateLimitResponse(rateCheck.retryAfter);
+
     const body = await request.json();
     const validatedData = registerSchema.parse(body);
 
@@ -30,12 +34,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Địa chỉ email này đã được đăng ký' }, { status: 409 });
     }
 
-    // Check student verification via university domain (Feature D.1)
+    // Check student domain match (Feature D.1)
     const studentMatch = await checkStudentEmail(validatedData.email);
 
     const passwordHash = await hashPassword(validatedData.password);
 
     // Create user in database
+    // SECURITY FIX L4: Do NOT auto-verify email without verification OTP/magic link.
+    // Record student match source ID as pending verification; emailVerifiedAt remains null until confirmed.
     const user = await prisma.user.create({
       data: {
         email: validatedData.email,
@@ -44,7 +50,7 @@ export async function POST(request: NextRequest) {
         role: 'user',
         status: 'active',
         studentVerifiedSourceId: studentMatch.isStudent && studentMatch.sourceId ? studentMatch.sourceId : null,
-        emailVerifiedAt: studentMatch.isStudent ? new Date() : null,
+        emailVerifiedAt: null,
       },
     });
 
@@ -91,15 +97,6 @@ export async function POST(request: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60, // 7 days
-      path: '/',
-    });
-
-    // Also set legacy cookie for full backward compatibility
-    response.cookies.set('auth-token', session.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60,
       path: '/',
     });
 

@@ -3,9 +3,13 @@ import prisma from '@/lib/db';
 import { getAuthUser } from '@/lib/security/auth';
 import { getRecommendations, generatePortfolioStrategy, getTopRecommendedOpportunities } from '@/lib/recommend/engine';
 import { ProfileInput } from '@/types';
+import { apiLimiter, enforceRateLimit, rateLimitResponse } from '@/lib/security/rate-limit';
 
 export async function GET(request: NextRequest) {
   try {
+    const rateCheck = enforceRateLimit(apiLimiter, request);
+    if (!rateCheck.allowed) return rateLimitResponse(rateCheck.retryAfter);
+
     const { searchParams } = new URL(request.url);
     const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '6', 10), 1), 30);
     const topOpportunities = await getTopRecommendedOpportunities(limit);
@@ -31,6 +35,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const rateCheck = enforceRateLimit(apiLimiter, request);
+    if (!rateCheck.allowed) return rateLimitResponse(rateCheck.retryAfter);
+
     const authUser = await getAuthUser(request);
     let formattedProfile: ProfileInput | null = null;
 

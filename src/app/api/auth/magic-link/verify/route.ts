@@ -86,14 +86,6 @@ export async function GET(request: NextRequest) {
       path: '/',
     });
 
-    response.cookies.set('auth-token', session.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60,
-      path: '/',
-    });
-
     response.cookies.set('refresh-token', session.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

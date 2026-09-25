@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rotateSession } from '@/lib/auth/session';
+import { apiLimiter, enforceRateLimit, rateLimitResponse } from '@/lib/security/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Get refresh token from cookie or request body
+    const rateCheck = enforceRateLimit(apiLimiter, request);
+    if (!rateCheck.allowed) return rateLimitResponse(rateCheck.retryAfter);
+
+    // Get refresh token from cookie or request body
     let refreshToken: string | null = null;
     const cookieHeader = request.headers.get('cookie') || '';
     const match = cookieHeader.match(/refresh-token=([^;]+)/);
@@ -51,14 +55,6 @@ export async function POST(request: NextRequest) {
     });
 
     response.cookies.set('access-token', result.accessToken!, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60,
-      path: '/',
-    });
-
-    response.cookies.set('auth-token', result.accessToken!, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

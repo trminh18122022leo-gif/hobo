@@ -4,9 +4,13 @@ import { magicLinkRequestSchema } from '@/lib/security/sanitize';
 import { generateRandomToken, hashToken } from '@/lib/auth/session';
 import { emailRouter } from '@/lib/email/router';
 import { logAudit } from '@/lib/security/audit';
+import { authLimiter, enforceRateLimit, rateLimitResponse } from '@/lib/security/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    const rateCheck = enforceRateLimit(authLimiter, request);
+    if (!rateCheck.allowed) return rateLimitResponse(rateCheck.retryAfter);
+
     const body = await request.json();
     const { email } = magicLinkRequestSchema.parse(body);
 
